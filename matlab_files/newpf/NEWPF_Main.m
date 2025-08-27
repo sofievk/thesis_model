@@ -25,25 +25,29 @@ phi0 = 0.393;       %Share of remaining emissions exiting atmosphere immediately
 Sbar = 581;         %Pre-industrial atmospheric GtC
 S1_2000 = 103;      %GtC
 S2_2000 = 699;      %GtC
-gamma = zeros(T,1); 
-for i = 1:1:T;
-    gamma(i) = 0.000023793; %Damage elasticity
-end
+
+%% Climate damage parameter %%
+%% COMMENT OUT FOR LF SCn   %%
+% gamma = zeros(T,1); 
+% for i = 1:1:T;
+%     gamma(i) = 0.000023793; %Damage elasticity
+% end
  
 %%Energy Aggregation%%
 %%%%%%%%%%%%%%%%%%%%%%
-rho = -0.058;      %Elasticity of substitution between energy sources
-kappa1 = 0.5429;   %Relative efficiency of oil
-kappa2 = 0.1015;   %Relative efficiency of coal
-kappa3 = 1-kappa1-kappa2; %Relative efficiency of low-carbon technologies
+rho = -0.058;               %Elasticity of substitution between energy sources
+kappa1 = 0.5429;            %Relative efficiency of oil
+kappa2 = 0.1015;            %Relative efficiency of coal
+kappa3 = 1-kappa1-kappa2;   %Relative efficiency of low-carbon technologies
 
 %%Final Goods Production%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 N = 1;                      %Normalize population
-alpha = 0.3;                %Capital output share
-%alpha = 0.66;
+alpha = 0.33;                %Capital output share
+% alpha = 0.66;
+
 %COMMENTED OUT FOR NEW PF
-% v = 0.04;                   %Energy output share
+% v = 0.04;                 %Energy output share
 Y2009 = 70000;              %Base year annual GDP in billions of USD
 r2009 = 0.05;               %Base year annual net rate of return 
 r2009d = ((1+r2009)^10)-1;  %Base yer decadal net rate of return
@@ -51,7 +55,10 @@ r2009d = ((1+r2009)^10)-1;  %Base yer decadal net rate of return
 %%%Depreciation OPTION 1: delta = 100%
 delta = 1;                              %Annual depreciation rate
 Delta = (1-(1-delta)^10);               %Decadal depreciation rate
-K0 = (alpha*Y2009*10)/(r2009d+Delta);   %Base year capital stock in billions of USD
+
+%Capital Stock Option 1:
+K0 = (alpha*Y2009*10)/(r2009d+Delta);   %GHKT Base year capital stock in billions of USD
+
 
 % %%%Depreciation OPTION 2: delta = 65%, no recalibration:
 % delta = 0.1;                            %Annual depreciation rate
@@ -88,7 +95,7 @@ gZ_en = ((1+gZa_en)^10)-1;                             %Decadal labor productivi
 %  
 %%%Final Goods Sector OPTION 2: Specify TFP Growth%%%
 %            gAa_y = 0.02;                            %Annual TFP growth rate (final output sector)
-             gAa_y = 0;                               %Alt. Annual TFP growth ate (final output sector)
+             gAa_y = 0;                               %Alt. Annual TFP growth rate (final output sector)
              %Commented out for new PF: gZa_y = ((1+gAa_y)^(1/(1-alpha-v)))-1;   %Corresponding annual labor productivity growth rate (final output sector)
              gZa_y = 0;
              gAd_y = ((1+gAa_y)^10)-1;                %Decadal TFP growth rate (final output sector)
@@ -136,7 +143,7 @@ gZBGP = gZd_y(T);
 %%Utility%%
 %%%%%%%%%%%
 % sigma = 0.5;      
- sigma = 1;         %Logarithmic preferences
+sigma = 1;         %Logarithmic preferences
 % sigma = 1.5;
 % sigma = 2 ;
 
@@ -162,13 +169,26 @@ end
 ypsilon = zeros(T,1);   %Coal carbon emissions coefficient
 a_yps = 8;              %Logistic curve coefficient
 b_yps = -0.05;          %Logistic curve coefficient
-for i = 1:1:T+n;
+for i = 1:1:T+n
      ypsilon(i) = 1/(1+exp((-1)*(a_yps+b_yps*(i-1)*10)));
 end
 
+%% Option 2 = exponential decline
+% ypsilon = zeros(T,1); 
+% emis_coal = 0.02;                                         %Annual emission depreciation rate (coal sector)
+% for i=1:1:T+n
+%     ypsilon(i) = 1*((1-emis_coal)^((i-1)*10));            %Decadal emission depreciation rate (coal sector)
+% end
+
+%% Option 3 = linear decline
+% ypsilon = zeros(T,1); 
+% emis_coal = 0.002;                                         %Annual emission depreciation rate (coal sector)
+% for i=1:1:T+n
+%     ypsilon(i) = 1-(emis_coal*((i)*10));                 %Decadal emission depreciation rate (coal sector)
+% end
+
 %%Graph for Figure S.1%%
 figure;
-%the original line -plot(y,ypsilon,'-o')- gave an x-axis until 3400 therefore changed to below 
 plot(y,ypsilon(1:T),'-o')
 xlabel('Year','FontSize',11)
 ylabel('Coal Emissions Coefficient','FontSize',11)
@@ -189,7 +209,7 @@ R0 = 253.8;     %GtC
 
 %%SELF ADDED FOR EXERGY
 eff_k = 1;           %annual efficiency of capital energy to exergy
-eff_K = (eff_k)^10;   %decadal efficiency of capital
+eff_K = (eff_k)^10;  %decadal efficiency of capital
 eff_l = 1;           %efficiency of labour energy to exergy
 eff_L = (eff_k)^10;  %decadal 
 
@@ -230,12 +250,13 @@ end
 %%Sigma=1%%
 %COMMENTED OUT (TO LOAD PREVIOUS RESULT) 
 
-%load('x_sig1_g0_b985_d1_new.mat','x')
+% load('x_newpf_v1.mat','x')
+% load('x_newpf_lf.mat','x')
 
-%COMMENTED OUT TO ENSURE X0 LOAD PREVIOUS RESULTS X
+%TO ENSURE X0 LOAD PREVIOUS RESULTS X
 %x0 = x;
 
-%COMMENTED IN (WAS ORIGINALLY COMMENTED IN)
+
 %%% OPTION 2: NEUTRAL STARTING POINT %%
 
 x0 = zeros(vars,1);
@@ -244,8 +265,7 @@ for i = 1:1:T-1;
      x0((T-1)+i) = R0-((R0/1.1)/T)*i;    %oil stock remaining
      x0(2*(T-1)+i) = 0.002;              %labour share coal
      x0(2*(T-1)+T+i) = 0.01;             %labour share wind
-     %SELF ADDED: 
-     x0(2*(T-1)+2*T+i) = 0.5;      %energy share capital
+     x0(2*(T-1)+2*T+i) = 0.5;            %energy share capital
 end
 x0(2*(T-1)+T) = 0.002;
 x0(2*(T-1)+T+T) = 0.01;
@@ -254,27 +274,26 @@ x0(2*(T-1)+T+T+T) = 0.5;
 %%Check Constraints and Objective Function Value at x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-%Commented out for new PF (removes At and v from the functions)
-% f = NEWPF_Objective(x0,A2t,A3t,At,Delta,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,v,ypsilon)
-%[c, ceq] = NEWPF_Constraints(x0,A2t,A3t,At,Delta,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,v,ypsilon)
-f = NEWPF_Objective(x0,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon)
-[c, ceq] = NEWPF_Constraints(x0,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon)
+% for NEW PF lf: remove gamma from before kappa1 in all functions
+f = NEWPF_Objective(x0,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon)
+[c, ceq] = NEWPF_Constraints(x0,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon)
 
 %%%%%%%%%%%
 %%%SOLVE%%%
 %%%%%%%%%%%
+
+%NEW PF lf: insert gamma for v1
 options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','active-set');
-[x, fval,exitflag] = fmincon(@(x)NEWPF_Objective(x,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)NEWPF_Constraints(x,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon), options);
-%[x, fval,exitflag] = fmincon(@(x)NEWPF_Objective(x,A2t,A3t,At,Delta,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,v,ypsilon), x0, [], [], [], [], lb, ub, @(x)NEWPF_Constraints(x,A2t,A3t,At,Delta,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,v,ypsilon), options);
+[x, fval,exitflag] = fmincon(@(x)NEWPF_Objective(x,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)NEWPF_Constraints(x,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon), options);
 
 
 %%Save Output%%
 %%%%%%%%%%%%%%%
 %File name structure:
-%Version#_sigma_gTFP_beta_delta_notes
+%x_scenario_version
 
-save('x_sig1_g0_b985_d1_newpf','x')
+%save('x_newpf_v1','x')
+save('x_newpf_lf','x')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 3: Compute Allocations and Carbon Taxes  %%%
@@ -307,7 +326,7 @@ for i = 1:1:T;
     energy(i) = ((kappa1*oil(i)^rho)+(kappa2*coal(i)^rho)+(kappa3*wind(i)^rho))^(1/rho);
 end
 
-%% SELF ADDED FOR EXERGY LABOUR AND CAPITAL
+%% SELF ADDED: Exergy "produced" by LABOUR AND CAPITAL
 exergy_K = zeros(T,1);
 for i = 1:1:T;
     exergy_K(i) = energy(i)*x(2*(T-1)+2*T+i)*eff_K;
@@ -350,15 +369,21 @@ end
 Yt = zeros(T,1);
 Ct = zeros(T,1);
 Kt1 = zeros(T,1);
-Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*((K0*exergy_K(1))^alpha)*((((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)*exergy_L(1))^(1-alpha));
+%Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*((K0*exergy_K(1))^alpha)*((((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)*exergy_L(1))^(1-alpha));
+    %LF scenario Yt:
+    Yt(1) = ((K0*exergy_K(1))^alpha)*((((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)*exergy_L(1))^(1-alpha));
 Ct(1) = (1-x(1))*Yt(1);
 Kt1(1) = x(1)*Yt(1)+(1-Delta)*K0;
 for i = 1:1:T-2;
-    Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*((Kt1(i)*exergy_K(i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)*exergy_L(i)^(1-alpha));
+    %Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*((Kt1(i)*exergy_K(i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)*exergy_L(i)^(1-alpha));
+        %LF:
+        Yt(1+i) = ((Kt1(i)*exergy_K(i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)*exergy_L(i)^(1-alpha));
     Kt1(1+i) = x(1+i)*Yt(1+i)+(1-Delta)*Kt1(i);
     Ct(1+i) = (1-x(i+1))*Yt(1+i); 
 end
-Yt(T) = (exp((-gamma(T))*(St(T)-Sbar)))*((Kt1(T-1)*exergy_K(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)*exergy_L(T)^(1-alpha));
+%Yt(T) = (exp((-gamma(T))*(St(T)-Sbar)))*((Kt1(T-1)*exergy_K(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)*exergy_L(T)^(1-alpha));
+    %LF:
+    Yt(T) = ((Kt1(T-1)*exergy_K(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)*exergy_L(T)^(1-alpha));
 theta = x(T-1);
 Ct(T) = Yt(T)*(1-theta);
 Kt1(T) = theta*Yt(T)+(1-Delta)*Kt1(T-1);
@@ -376,11 +401,11 @@ oiln = zeros(n,1);
 En = zeros(n,1);
 
 for i = 1:1:n;
-    %At(T+i) = At(T+i-1)*(1+gZd_y(T))^(1-alpha-v);   %Assumes productivity growth stays at period-T levels
     oiln(i) = ex_Oil*x(2*(T-1))*((1-ex_Oil)^i);     %Oil continues to be extracted at rate from period T-1
     En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_en)^i)^rho)+(kappa3*(wind(T)*(1+gZ_en)^i)^rho))^(1/rho);
-    %OldPF: Ytn(i) = At(T+i)*(exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)^(1-alpha-v))*(En(i)^v);
-    Ytn(i) = (exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)*exergy_K(T)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)*exergy_L(T)^(1-alpha));
+    %Ytn(i) = (exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)*exergy_K(T)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)*exergy_L(T)^(1-alpha));
+        %LF:
+        Ytn(i) = ((Ktn(i)*exergy_K(T)^alpha))*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)*exergy_L(T)^(1-alpha));
     Ct(T+i) = (1-theta)*Ytn(i);
     Ktn(i+1) = theta*Ytn(i)+(1-Delta)*Ktn(i);
     Yt(T+i) = Ytn(i);
@@ -402,159 +427,404 @@ for i = 1:1:T+n;
 end
 
 %%Step 2: Compute Tax Path%%%
-carbon_tax = zeros(T,1);    %Carbon tax level in $/mtC [since Yt is in $ billions and Et is in GtC]
-lambda_hat = zeros(T,1);    %Carbon tax/GDP ratio
+%% COMMENT OUT FOR LF SCn %%%
+% carbon_tax = zeros(T,1);    %Carbon tax level in $/mtC [since Yt is in $ billions and Et is in GtC]
+% lambda_hat = zeros(T,1);    %Carbon tax/GDP ratio
+% 
+% for i = 1:1:T+n;
+%     temp2 = zeros(T+n-i+1,1);
+%         for j = 1:1:T+n-i+1;
+%             temp2(j) = (beta^(j-1))*(MU(i+j-1)/MU(i))*(-gamma(T))*Yt(i+j-1)*MD(j);
+%         end
+%      carbon_tax(i) = sum(temp2)*(-1);
+%      lambda_hat(i) = carbon_tax(i)/Yt(i);
+% end
 
-for i = 1:1:T+n;
-    temp2 = zeros(T+n-i+1,1);
-        for j = 1:1:T+n-i+1;
-            temp2(j) = (beta^(j-1))*(MU(i+j-1)/MU(i))*(-gamma(T))*Yt(i+j-1)*MD(j);
-        end
-     carbon_tax(i) = sum(temp2)*(-1);
-     lambda_hat(i) = carbon_tax(i)/Yt(i);
+%%Temperature%%
+%%%%%%%%%%%%%%%%%
+lambda = 3.0;               % Climate sensitivity parameter
+temp = zeros(T,1); % Initialize the temperature vector
+for i = 1:1:T;
+    temp(i) = lambda * log2(St(i)/Sbar);
 end
-
-%%Diagnostic plot preview:
- z = 30;
- plot(y2(1:z),lambda_hat(1:z));
- xlabel('Year','FontSize',11, 'LineWidth', 1.5);
- ylabel('Carbon Tax/GDP','FontSize',11);
- ylim([3.5e-05, 30.5e-05]);
- title('Carbon Tax/GDP','FontSize',13);
  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 4: Save Allocations and Carbon Taxes  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%Note: Only save for appropriate model scenario
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%       FOR OPTIMAL SCENARIO    %%%%%%%%%%%%%%%%%%%
 
-energy_newpf_v1 = energy;
-save('energy_newpf_v1','energy_newpf_v1')
-fossil_fuel_newpf_v1 = fossil_fuel;
-save('fossil_fuel_newpf_v1','fossil_fuel_newpf_v1')
-oil_newpf_v1 = oil;
-save('oil_newpf_v1','oil_newpf_v1')
-ex_rates_newpf_v1 = ex_rates
-save('ex_rates_newpf_v1','ex_rates_newpf_v1')
-coal_newpf_v1 = coal;
-save('coal_newpf_v1','coal_newpf_v1')
-wind_newpf_v1 = wind;
-save('wind_newpf_v1','wind_newpf_v1')
-lambda_hat_newpf_v1 = lambda_hat;
-save('lambda_hat_newpf_v1','lambda_hat_newpf_v1')
-carbon_tax_newpf_v1 = carbon_tax;
-save('carbon_tax_newpf_v1','carbon_tax_newpf_v1')
-Yt_newpf_v1 = Yt;
-save('Yt_newpf_v1','Yt_newpf_v1')
-Ct_newpf_v1 = Ct;
-save('Ct_newpf_v1','Ct_newpf_v1')
+% %% Extract from x-vector
+% r_newpf_v1 = x(1:T-1);
+% save('r_newpf_v1','r_newpf_v1');
+% oil_stock_newpf_v1 = x(T:2*(T-1));
+% save('oil_stock_newpf_v1','oil_stock_newpf_v1');
+% N2_newpf_v1 = x(2*(T-1)+1:3*(T-1));
+% save('N2_newpf_v1', 'N2_newpf_v1');
+% N3_newpf_v1 = x(2*(T-1)+T+1:2*(T-1)+2*T);
+% save('N3_newpf_v1','N3_newpf_v1');
+% shareK_newpf_v1 = x(2*(T-1)+2*T+1 : 2*(T-1)+3*T-1); 
+% save('shareK_newpf_v1','shareK_newpf_v1');
+
+%% Save
+% energy_newpf_v1 = energy;
+% save('energy_newpf_v1','energy_newpf_v1')
+% fossil_fuel_newpf_v1 = fossil_fuel;
+% save('fossil_fuel_newpf_v1','fossil_fuel_newpf_v1')
+% oil_newpf_v1 = oil;
+% save('oil_newpf_v1','oil_newpf_v1')
+% ex_rates_newpf_v1 = ex_rates
+% save('ex_rates_newpf_v1','ex_rates_newpf_v1')
+% coal_newpf_v1 = coal;
+% save('coal_newpf_v1','coal_newpf_v1')
+% wind_newpf_v1 = wind;
+% save('wind_newpf_v1','wind_newpf_v1')
+% lambda_hat_newpf_v1 = lambda_hat;
+% save('lambda_hat_newpf_v1','lambda_hat_newpf_v1')
+% carbon_tax_newpf_v1 = carbon_tax;
+% save('carbon_tax_newpf_v1','carbon_tax_newpf_v1')
+% Yt_newpf_v1 = Yt;
+% save('Yt_newpf_v1','Yt_newpf_v1')
+% Ct_newpf_v1 = Ct;
+% save('Ct_newpf_v1','Ct_newpf_v1')
+% temp_newpf_v1 = temp;
+% save('temp_newpf_v1','temp_newpf_v1');
+% carbon_newpf_v1 = St;
+% save('carbon_newpf_v1','carbon_newpf_v1');
+% 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%      Section 5: Graph Optimal Carbon Taxes     %%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% 
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % %%Graph Carbon Tax-GDP Ratio%%
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% load('lambda_hat_newpf_v1','lambda_hat_newpf_v1')
+% 
+% z = 30;
+% figure;
+% plot(y2(1:z), lambda_hat_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Carbon Tax/GDP', 'FontSize', 11);
+% ylim([7.5e-05, 30.5e-05]);
+% title('Carbon Tax to GDP ratio (new production function)');
+% 
+% 
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % %%%Graph Carbon Tax Level%%%
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% load('carbon_tax_newpf_v1','carbon_tax_newpf_v1')
+% 
+% z = 10;
+% figure;
+% plot(y2(1:z), carbon_tax_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
+% title('Carbon Tax (new production function)');
+% 
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % %%%  Energy Use Over Time  %%%
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% %% Energy
+% load('energy_newpf_v1.mat','energy_newpf_v1')
+% 
+% z = 30;
+% figure;
+% plot(y2(1:z), energy_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('GtC', 'FontSize', 11);
+% title('Energy Use (new production function)');
+% 
+% %% Fossil Fuel
+% load('fossil_fuel_newpf_v1.mat','fossil_fuel_newpf_v1')
+% 
+% z = 30;
+% figure(Name='Fossil Fuel Use');
+% plot(y2(1:z), fossil_fuel_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Energy (Gtoe)', 'FontSize', 11);
+% title('Fossil Fuel Use (new production function)');
+% 
+% %% Oil
+% load('oil_newpf_v1.mat','oil_newpf_v1')
+% 
+% z = 30;
+% figure(Name = 'Oil Use');
+% plot(y2(1:z), oil_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Energy (Gtoe)', 'FontSize', 11);
+% title('Oil Use (new production function)');
+% 
+% %% Fraction of oil left extracted
+% load('ex_rates_newpf_v1.mat','ex_rates_newpf_v1')
+% 
+% z = 29;
+% figure;
+% plot(y2(1:z), ex_rates_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Rate', 'FontSize', 11);
+% title('Extraction rates of oil (new production function)');
+% 
+% %% Coal
+% load('coal_newpf_v1.mat','coal_newpf_v1')
+% 
+% z = 30;
+% figure(Name ='Coal Use');
+% plot(y2(1:z), coal_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Energy (Gtoe)', 'FontSize', 11);
+% title('Coal Use (new production function)');
+% 
+% %% Wind
+% load('wind_newpf_v1.mat','wind_newpf_v1')
+% 
+% z = 30;
+% figure(Name = 'Wind');
+% plot(y2(1:z), wind_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Wind Use', 'FontSize', 11);
+% title('Wind Use (new production function)');
+% 
+% 
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % %%%  Climate Impact        %%%
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% %% Emissions
+% load('carbon_newpf_v1', 'carbon_newpf_v1')
+% 
+% z = 30;
+% figure(Name='Carbon Emissions');
+% plot(y2(1:z), carbon_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Emissions (GtC)', 'FontSize', 11);
+% title('Emissions (new production function)');
+% 
+% %% Temperature
+% load('temp_newpf_v1', 'temp_newpf_v1')
+% 
+% figure(Name='Temperature Increase');
+% plot(y2(1:T), temp, ' -r', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Temperature Increase (degrees C)', 'FontSize', 11);
+% title('Temperature Increase (new production function)');
+% 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%  Labour shares         %%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+% %% Labour share to wind (later: green capital)
+% load('N3_newpf_v1', 'N3_newpf_v1')
+% 
+% z = 29;
+% figure(Name='Labour Share Green Capital');
+% plot(y2(1:z), N3_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Share', 'FontSize', 11);
+% title('Labour Share to Green Capital Production (newpf)');
+% 
+% %% Labour share to coal
+% load('N2_newpf_v1', 'N2_newpf_v1')
+% 
+% z = 29;
+% figure(Name='Labour Share Coal');
+% plot(y2(1:z), N2_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Share', 'FontSize', 11);
+% title('Labour Share to Coal Production (newpf)');
+% 
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % %%%  GDP Growth Over Time  %%%
+% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% load('Yt_newpf_v1','Yt_newpf_v1')
+% 
+% z = 28;
+% figure(Name='GDP');
+% plot(y2(1:z), Yt_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+% xlabel('Year', 'FontSize', 11);
+% ylabel('Output', 'FontSize', 11);
+% title('GDP (new production function)');
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%       FOR LF SCENARIO      %%%%%%%%%%%%%%%%%%%
+
+%% Extract from x-vector
+r_newpf_lf = x(1:T-1);
+save('r_newpf_lf','r_newpf_lf');
+oil_stock_newpf_lf = x(T:2*(T-1));
+save('oil_stock_newpf_lf','oil_stock_newpf_lf');
+N2_newpf_lf = x(2*(T-1)+1:3*(T-1));
+save('N2_newpf_lf', 'N2_newpf_lf');
+N3_newpf_lf = x(2*(T-1)+T+1:2*(T-1)+2*T);
+save('N3_newpf_lf','N3_newpf_lf');
+shareK_newpf_lf = x(2*(T-1)+2*T+1 : 2*(T-1)+3*T-1); 
+save('shareK_newpf_lf','shareK_newpf_lf');
+
+%% Save
+energy_newpf_lf = energy;
+save('energy_newpf_lf','energy_newpf_lf')
+fossil_fuel_newpf_lf = fossil_fuel;
+save('fossil_fuel_newpf_lf','fossil_fuel_newpf_lf')
+oil_newpf_lf = oil;
+save('oil_newpf_lf','oil_newpf_lf')
+ex_rates_newpf_lf = ex_rates
+save('ex_rates_newpf_lf','ex_rates_newpf_lf')
+coal_newpf_lf = coal;
+save('coal_newpf_lf','coal_newpf_lf')
+wind_newpf_lf = wind;
+save('wind_newpf_lf','wind_newpf_lf')
+Yt_newpf_lf = Yt;
+save('Yt_newpf_lf','Yt_newpf_lf')
+Ct_newpf_lf = Ct;
+save('Ct_newpf_lf','Ct_newpf_lf')
+temp_newpf_lf = temp;
+save('temp_newpf_lf','temp_newpf_lf');
+carbon_newpf_lf = St;
+save('carbon_newpf_lf','carbon_newpf_lf');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 5: Graph Optimal Carbon Taxes     %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
- 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%Graph Carbon Tax-GDP Ratio%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-load('lambda_hat_newpf_v1','lambda_hat_newpf_v1')
-
-z = 30;
-figure;
-plot(y2(1:z), lambda_hat_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
-xlabel('Year', 'FontSize', 11);
-ylabel('Carbon Tax/GDP', 'FontSize', 11);
-ylim([7.5e-05, 30.5e-05]);
-title('Carbon Tax to GDP ratio (new production function)');
-
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%Graph Carbon Tax Level%%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-load('carbon_tax_newpf_v1','carbon_tax_newpf_v1')
-
-z = 10;
-figure;
-plot(y2(1:z), carbon_tax_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
-xlabel('Year', 'FontSize', 11);
-ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
-title('Carbon Tax (new production function)');
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%  Energy Use Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Energy
-load('energy_newpf_v1.mat','energy_newpf_v1')
+load('energy_newpf_lf.mat','energy_newpf_lf')
 
 z = 30;
 figure;
-plot(y2(1:z), energy_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+plot(y2(1:z), energy_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('GtC', 'FontSize', 11);
 title('Energy Use (new production function)');
 
 %% Fossil Fuel
-load('fossil_fuel_newpf_v1.mat','fossil_fuel_newpf_v1')
+load('fossil_fuel_newpf_lf.mat','fossil_fuel_newpf_lf')
 
 z = 30;
-figure;
-plot(y2(1:z), fossil_fuel_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name='Fossil Fuel Use');
+plot(y2(1:z), fossil_fuel_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
-ylabel('GtC', 'FontSize', 11);
+ylabel('Energy (Gtoe)', 'FontSize', 11);
 title('Fossil Fuel Use (new production function)');
 
 %% Oil
-load('oil_newpf_v1.mat','oil_newpf_v1')
+load('oil_newpf_lf.mat','oil_newpf_lf')
 
 z = 30;
-figure;
-plot(y2(1:z), oil_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name = 'Oil Use');
+plot(y2(1:z), oil_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
-ylabel('Oil Use', 'FontSize', 11);
+ylabel('Energy (Gtoe)', 'FontSize', 11);
 title('Oil Use (new production function)');
 
 %% Fraction of oil left extracted
-load('ex_rates_newpf_v1.mat','ex_rates_newpf_v1')
+load('ex_rates_newpf_lf.mat','ex_rates_newpf_lf')
 
 z = 29;
 figure;
-plot(y2(1:z), ex_rates_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+plot(y2(1:z), ex_rates_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Rate', 'FontSize', 11);
 title('Extraction rates of oil (new production function)');
 
 %% Coal
-load('coal_newpf_v1.mat','coal_newpf_v1')
+load('coal_newpf_lf.mat','coal_newpf_lf')
 
 z = 30;
-figure;
-plot(y2(1:z), coal_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name ='Coal Use');
+plot(y2(1:z), coal_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
-ylabel('Coal Use', 'FontSize', 11);
+ylabel('Energy (Gtoe)', 'FontSize', 11);
 title('Coal Use (new production function)');
 
 %% Wind
-load('wind_newpf_v1.mat','wind_newpf_v1')
+load('wind_newpf_lf.mat','wind_newpf_lf')
 
 z = 30;
-figure;
-plot(y2(1:z), wind_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name = 'Wind');
+plot(y2(1:z), wind_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Wind Use', 'FontSize', 11);
 title('Wind Use (new production function)');
 
+%% Energy share to Capital
+load('shareK_newpf_lf.mat','shareK_newpf_lf')
+
+z = 29;
+figure(Name = 'Energy Share to Capital');
+plot(y2(1:z), shareK_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Energy Share to Capital (new production function)');
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%  Climate Impact        %%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Emissions
+load('carbon_newpf_lf', 'carbon_newpf_lf')
+
+z = 30;
+figure(Name='Carbon Emissions');
+plot(y2(1:z), carbon_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Emissions (GtC)', 'FontSize', 11);
+title('Emissions (new production function)');
+
+%% Temperature
+load('temp_newpf_lf', 'temp_newpf_lf')
+
+figure(Name='Temperature Increase');
+plot(y2(1:T), temp, ' -r', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Temperature Increase (degrees C)', 'FontSize', 11);
+title('Temperature Increase (new production function)');
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%  Labour shares         %%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Labour share to wind (later: green capital)
+load('N3_newpf_lf', 'N3_newpf_lf')
+
+z = 29;
+figure(Name='Labour Share Green Capital');
+plot(y2(1:z), N3_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Share to Green Capital Production (newpf)');
+
+%% Labour share to coal
+load('N2_newpf_lf', 'N2_newpf_lf')
+
+z = 29;
+figure(Name='Labour Share Coal');
+plot(y2(1:z), N2_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Share to Coal Production (newpf)');
+
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%  GDP Growth Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-load('Yt_newpf_v1.mat','Yt_newpf_v1')
+load('Yt_newpf_lf','Yt_newpf_lf')
 
-z = 10;
-figure;
-plot(y2(1:z), Yt_newpf_v1(1:z), ' -b', 'LineWidth', 1.5);
+z = 28;
+figure(Name='GDP');
+plot(y2(1:z), Yt_newpf_lf(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Output', 'FontSize', 11);
 title('GDP (new production function)');

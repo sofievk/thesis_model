@@ -1,5 +1,5 @@
 
-function f = NEWPF_Objective(x,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon) 
+function f = NEWPF_Objective(x,A2t,A3t,Delta,eff_K,eff_L,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,ypsilon) 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 3: Objective function                          %%%
@@ -89,19 +89,27 @@ end
 Yt = zeros(T,1);
 Ct = zeros(T,1);
 Kt1 = zeros(T,1);
-%Yt(1) = At(1)*(exp((-gamma(1))*(St(1)-Sbar)))*(K0^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha-v))*(energy(1)^v);
-Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*((K0*exergy_K(1))^alpha)*((((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)*exergy_L(1))^(1-alpha));
+%OLD: Yt(1) = At(1)*(exp((-gamma(1))*(St(1)-Sbar)))*(K0^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha-v))*(energy(1)^v);
+%NEW:
+%Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*((K0*exergy_K(1))^alpha)*((((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)*exergy_L(1))^(1-alpha));
+    %LF:
+    Yt(1) = ((K0*exergy_K(1))^alpha)*((((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)*exergy_L(1))^(1-alpha));
 Ct(1) = (1-x(1))*Yt(1);
 Kt1(1) = x(1)*Yt(1)+(1-Delta)*K0;
 for i = 1:1:T-2;
-    %Yt(1+i) = At(1+i)*(exp((-gamma(1+i))*(St(1+i)-Sbar)))*(Kt1(i)^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha-v))*(energy(1+i)^v);
-    Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*((Kt1(i)*exergy_K(i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)*exergy_L(i)^(1-alpha));
+    %OLD: Yt(1+i) = At(1+i)*(exp((-gamma(1+i))*(St(1+i)-Sbar)))*(Kt1(i)^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha-v))*(energy(1+i)^v);
+    %NEW: 
+    %Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*((Kt1(i)*exergy_K(i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)*exergy_L(i)^(1-alpha));
+        %LF:
+        Yt(1+i) = ((Kt1(i)*exergy_K(i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)*exergy_L(i)^(1-alpha));
     Kt1(1+i) = x(1+i)*Yt(1+i)+(1-Delta)*Kt1(i);
     Ct(1+i) = (1-x(i+1))*Yt(1+i); 
 end
 
-%Yt(T) = At(T)*(exp((-gamma(T))*(St(T)-Sbar)))*(Kt1(T-1)^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha-v))*(energy(T)^v);
-Yt(T) = (exp((-gamma(T))*(St(T)-Sbar)))*((Kt1(T-1)*exergy_K(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)*exergy_L(T)^(1-alpha));
+%OLD: Yt(T) = At(T)*(exp((-gamma(T))*(St(T)-Sbar)))*(Kt1(T-1)^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha-v))*(energy(T)^v);
+%Yt(T) = (exp((-gamma(T))*(St(T)-Sbar)))*((Kt1(T-1)*exergy_K(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)*exergy_L(T)^(1-alpha));
+    %LF:
+    Yt(T) = ((Kt1(T-1)*exergy_K(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)*exergy_L(T)^(1-alpha));
 theta = x(T-1);
 Ct(T) = Yt(T)*(1-theta);
 Kt1(T) = theta*Yt(T)+(1-Delta)*Kt1(T-1);
@@ -118,11 +126,13 @@ oiln = zeros(n,1);
 En = zeros(n,1);
 
 for i = 1:1:n;
-    %At(T+i) = At(T+i-1)*(1+gZd_y(T+i-1))^(1-alpha-v);
+    %OLD: At(T+i) = At(T+i-1)*(1+gZd_y(T+i-1))^(1-alpha-v);
     oiln(i) = ex_Oil*x(2*(T-1))*((1-ex_Oil)^i);
     En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_en)^i)^rho)+(kappa3*(wind(T)*(1+gZ_en)^i)^rho))^(1/rho);
-    %Ytn(i) = At(T+i)*(exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)^(1-alpha-v))*(En(i)^v);
-    Ytn(i) = (exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)*exergy_K(T)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)*exergy_L(T)^(1-alpha));
+    %OLD: Ytn(i) = At(T+i)*(exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)^(1-alpha-v))*(En(i)^v);
+    %Ytn(i) = (exp((-gamma(T))*(St(T)-Sbar)))*(Ktn(i)*exergy_K(T)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)*exergy_L(T)^(1-alpha));
+        %LF:
+        Ytn(i) = (Ktn(i)*exergy_K(T)^alpha)*(((1-x(2*(T-1)+2*T)-x(2*(T-1)+T))*N)*exergy_L(T)^(1-alpha));
     Ct(T+i) = (1-theta)*Ytn(i);
     Ktn(i+1) = theta*Ytn(i)+(1-Delta)*Ktn(i);
     Yt(T+i) = Ytn(i);

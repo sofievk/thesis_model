@@ -290,6 +290,12 @@ for i = 1:1:T;
     energy(i) = ((kappa1*oil(i)^rho)+(kappa2*coal(i)^rho)+(kappa3*wind(i)^rho))^(1/rho);
 end
 
+%%Self added: Compute fossil fuel usage
+fossil_fuel = zeros(T,1);
+for i = 1:1:T;
+    fossil_fuel(i) = oil(i) + coal(i);
+end
+
 %%%%%%%%%%%%%
 %%Emissions%%
 %%%%%%%%%%%%%
@@ -380,111 +386,169 @@ for i = 1:1:T+n;
      lambda_hat(i) = carbon_tax(i)/Yt(i);
 end
 
-%%Diagnostic plot preview:
- z = 30;
- plot(y2(1:z),lambda_hat(1:z));
- xlabel('Year','FontSize',11);
- ylabel('Carbon Tax/GDP','FontSize',11);
- ylim([3.5e-05, 8.5e-05]);
- title('Carbon Tax/GDP','FontSize',13);
- 
+%% Calculate temperature impacts
+lambda = 3.0;               % Climate sensitivity parameter
+temp = zeros(T,1); % Initialize the temperature vector
+for i = 1:1:T;
+    temp(i) = lambda * log2(St(i)/Sbar);
+end
 
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Plot    
+figure (Name='Temperature Increase');
+plot(y2(1:T), temp, ' -r', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Temperature Increase (degrees C)', 'FontSize', 11);
+title('Temperature Increase (GHKT baseline)'); 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 4: Save Allocations and Carbon Taxes  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Note: Only save for appropriate model scenario
 
-oil_V13_sig1_g0_b985_d1 = oil;
-save('oil_V13_sig1_g0_b985_d1','oil_V13_sig1_g0_b985_d1')
-coal_V13_sig1_g0_b985_d1 = coal;
-save('coal_V13_sig1_g0_b985_d1','coal_V13_sig1_g0_b985_d1')
-wind_V13_sig1_g0_b985_d1 = wind;
-save('wind_V13_sig1_g0_b985_d1','wind_V13_sig1_g0_b985_d1')
-lambda_hat_V13_sig1_g0_b985_d1 = lambda_hat;
-save('lambda_hat_V13_sig1_g0_b985_d1','lambda_hat_V13_sig1_g0_b985_d1')
-carbon_tax_V13_sig1_g0_b985_d1 = carbon_tax;
-save('carbon_tax_V13_sig1_g0_b985_d1','carbon_tax_V13_sig1_g0_b985_d1')
-Yt_V13_sig1_g0_b985_d1 = Yt;
-save('Yt_V13_sig1_g0_b985_d1','Yt_V13_sig1_g0_b985_d1')
-Ct_V13_sig1_g0_b985_d1 = Ct;
-save('Ct_V13_sig1_g0_b985_d1','Ct_V13_sig1_g0_b985_d1')
+oil_ghkt_v1 = oil;
+save('oil_ghkt_v1','oil_ghkt_v1')
+coal_ghkt_v1 = coal;
+save('coal_ghkt_v1','coal_ghkt_v1')
+wind_ghkt_v1 = wind;
+save('wind_ghkt_v1','wind_ghkt_v1')
+lambda_hat_ghkt_v1 = lambda_hat;
+save('lambda_hat_ghkt_v1','lambda_hat_ghkt_v1')
+carbon_tax_ghkt_v1 = carbon_tax;
+save('carbon_tax_ghkt_v1','carbon_tax_ghkt_v1')
+Yt_ghkt_v1 = Yt;
+save('Yt_ghkt_v1','Yt_ghkt_v1')
+Ct_ghkt_v1 = Ct;
+save('Ct_ghkt_v1','Ct_ghkt_v1')
+St_ghkt_v1 = St;
+save('St_ghkt_v1', 'St_ghkt_v1')
+fossil_fuel_ghkt_v1 = fossil_fuel;
+save('fossil_fuel_ghkt_v1','fossil_fuel_ghkt_v1');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 5: Graph Optimal Carbon Taxes     %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% 
+%% Self added: Extract
+r_ghkt_v1 = x(1:T-1);
+save('r_ghkt_v1','r_ghkt_v1');
+oil_stock_ghkt_v1 = x(T:2*(T-1));
+save('oil_stock_ghkt_v1','oil_stock_ghkt_v1');
+N2_ghkt_v1 = x(2*(T-1)+1:3*(T-1)-1);
+save('N2_ghkt_v1', 'N2_ghkt_v1');
+N3_ghkt_v1 = x(2*(T-1)+T+1:2*(T-1)+2*T);
+save('N3_ghkt_v1','N3_ghkt_v1');
+ 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%Graph Carbon Tax-GDP Ratio%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-load('lambda_hat_V13_sig1_g0_b985_d1','lambda_hat_V13_sig1_g0_b985_d1')
+load('lambda_hat_ghkt_v1','lambda_hat_ghkt_v1')
 
 z = 30;
-figure;
-plot(y2(1:z), lambda_hat_V13_sig1_g0_b985_d1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name = 'Carbon Tax to GDP ratio (GHKT baseline)');
+plot(y2(1:z), lambda_hat_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Carbon Tax/GDP', 'FontSize', 11);
 ylim([3.5e-05, 8.5e-05]);
-title('Carbon Tax to GDP ratio (sig1_g0_b985_d1)');
+title('Carbon Tax to GDP ratio (GHKT baseline)');
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%Graph Carbon Tax Level%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-load('carbon_tax_V13_sig1_g0_b985_d1','carbon_tax_V13_sig1_g0_b985_d1')
+load('carbon_tax_ghkt_v1','carbon_tax_ghkt_v1')
 
 z = 10;
-figure;
-plot(y2(1:z), carbon_tax_V13_sig1_g0_b985_d1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name = 'Carbon Tax ($/mtC) (GHKT baseline)');
+plot(y2(1:z), carbon_tax_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
-title('Carbon Tax ($/mtC) (sig1_g0_b985_d1)');
+title('Carbon Tax ($/mtC) (GHKT baseline)');
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%  Energy Use Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Oil
-load('oil_V13_sig1_g0_b985_d1.mat', 'oil_V13_sig1_g0_b985_d1')
+load('oil_ghkt_v1', 'oil_ghkt_v1')
 
 z = 30;
-figure;
-plot(y2(1:z), oil_V13_sig1_g0_b985_d1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name ='Oil Use (GHKT baseline)');
+plot(y2(1:z), oil_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Oil Use', 'FontSize', 11);
-title('Oil Use (sig1_g0_b985_d1)');
+title('Oil Use (GHKT baseline)');
 
 %% Coal
-load('coal_V13_sig1_g0_b985_d1.mat', 'coal_V13_sig1_g0_b985_d1')
+load('coal_ghkt_v1', 'coal_ghkt_v1')
 
 z = 30;
-figure;
-plot(y2(1:z), coal_V13_sig1_g0_b985_d1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name ='Coal Use (GHKT baseline)');
+plot(y2(1:z), coal_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Coal Use', 'FontSize', 11);
-title('Coal Use (sig1_g0_b985_d1)');
+title('Coal Use (GHKT baseline)');
 
 %% Wind
-load('wind_V13_sig1_g0_b985_d1.mat', 'wind_V13_sig1_g0_b985_d1')
+load('wind_ghkt_v1.mat', 'wind_ghkt_v1')
 
 z = 30;
-figure;
-plot(y2(1:z), wind_V13_sig1_g0_b985_d1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name = 'Wind Use (GHKT baseline)');
+plot(y2(1:z), wind_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Wind Use', 'FontSize', 11);
-title('Wind Use (sig1_g0_b985_d1)');
+title('Wind Use (GHKT baseline)');
+
+%% Fossil Fuels
+load('fossil_fuel_ghkt_v1', 'fossil_fuel_ghkt_v1')
+
+z = 30;
+figure(Name = 'Fossil Fuel Use (GHKT baseline)');
+plot(y2(1:z), fossil_fuel_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Energy (Gtoe)', 'FontSize', 11);
+title('Fossil Fuel Use (GHKT baseline)');
+
+%% Emissions
+load('St_ghkt_v1', 'St_ghkt_v1')
+
+z = 30;
+figure(Name='Emissions (GHKT baseline)');
+plot(y2(1:z), St_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Emissions (GtC)', 'FontSize', 11);
+title('Emissions (GHKT baseline)');
+
+%% Labour share to wind energy
+load('N3_ghkt_v1', 'N3_ghkt_v1')
+
+z = 30;
+figure(Name='Labour Share to Wind Energy Production (GHKT baseline)');
+plot(y2(1:z), N3_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Share to Wind Energy Production (GHKT baseline)');
+
+%% Labour share to coal
+load('N2_ghkt_v1', 'N2_ghkt_v1')
+
+z = 28;
+figure(Name = 'Labour Share to Coal Production (GHKT baseline)');
+plot(y2(1:z), N2_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Share to Coal Production (GHKT baseline)');
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%  GDP Growth Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-load('Yt_V13_sig1_g0_b985_d1.mat','Yt_V13_sig1_g0_b985_d1')
+load('Yt_ghkt_v1','Yt_ghkt_v1')
 
 z = 10;
-figure;
-plot(y2(1:z), Yt_V13_sig1_g0_b985_d1(1:z), ' -b', 'LineWidth', 1.5);
+figure(Name='GDP (GHKT baseline)');
+plot(y2(1:z), Yt_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Output', 'FontSize', 11);
-title('GDP (sig1_g0_b985_d1)');
+title('GDP (GHKT baseline)');
