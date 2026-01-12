@@ -1,1 +1,19 @@
+# Python compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter checkpoints
 .ipynb_checkpoints/
+
+# MATLAB temporary outputs (optional, include only if you don't want to track these)
+*.m~  # sometimes MATLAB autosaves temp files
+*.asv # MATLAB autosave files
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Archive or backup folders you don’t want to track
+archive/
