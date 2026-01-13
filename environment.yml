@@ -1,0 +1,7 @@
+name: matlab_env
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - notebook
+prefix: C:\Users\Gebruiker\miniconda3\envs\matlab_env

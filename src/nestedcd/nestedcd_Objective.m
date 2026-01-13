@@ -5,9 +5,6 @@ function f = nestedcd_Objective(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0
 %%%      Section 3: Objective function                          %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%OLD OBJECTIVE FUNCTION INCLUDING At and v
-%function f = NEWPF_Objective(x,A2t,A3t,At,Delta,K0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_en,gZd_y,gZBGP,gamma,kappa1,kappa2,kappa3,phi,phi0,phiL,rho,sigma,v,ypsilon)
-
 %%Compute consumption based on x = [{Kt+1},{Rt+1},{pi0t},{pi2t}]:
 %Step 1: Compute implied energy inputs
 %Step 2: Compute carbon emissions and concentrations
@@ -181,16 +178,15 @@ for i = 1:1:T+n
 end
 
 U = zeros(T+n,1);
-epsilon = 1e-10;
 
 for i = 1:1:T+n-1
     if Ct(i)<0
         U(i) = -99;
     else
         if sigma~=1
-             U(i) =(beta^(i-1))*(((ct(i)+epsilon)^(1-sigma))-1)/(1-sigma);
+             U(i) =(beta^(i-1))*(((ct(i))^(1-sigma))-1)/(1-sigma);
         else
-            U(i) = (beta^(i-1))*log(ct(i)+epsilon);
+            U(i) = (beta^(i-1))*log(ct(i));
         end
     end
 end

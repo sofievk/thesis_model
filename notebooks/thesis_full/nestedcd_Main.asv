@@ -306,6 +306,7 @@ x0(2*(T-1)+T+T) = 0.01;
 %%Check Constraints and Objective Function Value at x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% for NEW PF lf: remove gamma
 f = nestedcd_Objective(x0,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
 [c, ceq] = nestedcd_Constraints(x0,A2t,A3t,Delta_G,Delta,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
 
@@ -2429,7 +2430,6 @@ plot(y2(1:z),coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
 plot(y2(1:z),coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
 hold off;
 ylabel('Energy (x1000 TWh)');
-title('Figure 2a: Coal production');
 legend({'Baseline', 'Laissez-faire'}, 'Location', 'northwest');
 grid off;
 xlim([2025 2250])
@@ -2446,7 +2446,6 @@ plot(y2(1:z),emiss_coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
 plot(y2(1:z),emiss_coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
 %plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
 ylabel('Emissions (GtC)');
-title('Figure 2b: Coal emissions');
 legend({'Baseline', 'Laissez-faire','GHKT'}, 'Location', 'best');
 xlim([2025 2250])
 
@@ -2463,7 +2462,6 @@ plot(y2(1:z), temp_baseline(1:z),'-','Color', [0.75 0.2 0.2],'Linewidth', 1.5);
 plot(y2(1:z), temp_nestedcd_lf(1:z),':','Color', [0.75 0.4 0.2],'Linewidth', 1.5);
 hold off;
 ylabel('{\circ}C');
-title('Figure 4: Temperature');
 legend({'GHKT','Baseline','Laissez-faire'}, 'Location', 'best');
 xlim([2025 2250]);
 
@@ -2497,7 +2495,7 @@ plot(y2(1:z), E3_dG_dK(1:z),'-.','Color', [0.2 0.7 0.3],'Linewidth', 1.5);
 % plot(y2(1:z), E3_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
 hold off;
 ylabel('Energy (x1000 TWh)');
-title('Figure 5a&b: Fossil Fuel Use');
+title('Figure 5a: Fossil Fuel Use');
 legend({'Baseline','S1: \delta\kappa_M = 0.002','S2: \delta_G = 0.1', 'S3: \delta\kappa_M = 0.002, \delta_G = 0.1'}, 'Location', 'best');
 xlim([2025 2250]);
 
@@ -2624,7 +2622,7 @@ figure;
 hold on;
 plot(y2(1:z),emiss_coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
 plot(y2(1:z),emiss_coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
-plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
+%plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
 ylabel('Emissions (GtC)');
 title('Figure A.3: Emissions from coal');
 legend({'Baseline', 'Laissez-faire','GHKT'}, 'Location', 'best');
@@ -2962,7 +2960,7 @@ plot(t, GDP_betahigh_ypsilonhigh(1:z), ':o', 'Color',[0 0.6 0], 'LineWidth', 1.0
 
 xlabel('Period');
 ylabel('GDP (billion USD)');
-title('GDP Sensitivity to beta and ypsilon)');
+title('GDP Sensitivity to \beta and \Ypsilon)');
 legend('Location','bestoutside');
 xlim([0 28])
 set(gca,'FontSize',11);
