@@ -6,7 +6,7 @@ This repository contains the code, notebooks, and supporting data necessary for 
 
 
 
-The folder structure is as follows:
+It is a work in progress. The current folder structure is as follows:
 
 
 
@@ -14,26 +14,25 @@ Thesis Project/
 
 │
 
-├── src/                       # All MATLAB code and model files
+├── notebooks/   # Jupyter notebooks
 
-│   ├── ghkt\_original/         # Original GHKT model files
-
-│   ├── ghkt\_replication/      # My replication of the GHKT model 
-
-│   ├── ghkt\_mineral\_only/     # GHKT with added mineral constraints
-
-│   ├── newpf\_full/            # New model with new production function and mineral constraints
-
-│   └── newpf\_nomin/           # New production function only
-
+│   └── ghkt_replication\_replication.ipynb     # Notebook to run replication in Python/Jupyter
+    └── thesis_full\thesis_full.ipynb           # Notebook to run replication in Python/Jupyter
 │
 
-├── notebooks/                 # Jupyter notebooks
+├── src/                          # All MATLAB code and model files
 
-│   └── ghkt\_replication.ipynb # Notebook to run replication in Python/Jupyter
+│   ├── ghkt\_original/           # Original GHKT model files
+
+│   ├── ghkt\_replication/        # My replication of the GHKT model 
+
+│   ├── ghkt\_mineral\_only/      # GHKT with added mineral constraints
+
+│   ├── newpf\_full/              # New model with new production function and mineral constraints
+
+│   └── newpf\_nomin/             # New production function only
 
 │
-
 │
 
 ├── .gitignore                 # Specifies files/folders not tracked by Git
