@@ -6,7 +6,7 @@ This repository contains the code, notebooks, and supporting data necessary for 
 
 
 
-The folder structure is as follows. Each folder contains its own README with additional information.
+The folder structure is as follows:
 
 
 
