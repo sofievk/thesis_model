@@ -7,9 +7,12 @@ __pycache__/
 # Jupyter checkpoints
 .ipynb_checkpoints/
 
-# MATLAB temporary outputs (optional, include only if you don't want to track these)
+# MATLAB temporary outputs 
 *.m~  # sometimes MATLAB autosaves temp files
 *.asv # MATLAB autosave files
+
+# Ignore MATLAB output files in notebooks
+notebooks/**/*.mat
 
 # OS-specific files
 .DS_Store
