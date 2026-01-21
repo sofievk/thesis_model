@@ -16,9 +16,9 @@ Thesis Project/
 
 ├── notebooks/   # Jupyter notebooks
 
-│   └── ghkt_replication\_replication.ipynb     # Notebook to run replication in Python/Jupyter
-    └── thesis_full\thesis_full.ipynb           # Notebook to run replication in Python/Jupyter
-│
+│    └── ghkt_replication\_replication.ipynb     # Notebook to run replication in Python/Jupyter
+ 
+│    └── thesis_full\thesis_full.ipynb           # Notebook to run replication in Python/Jupyter
 
 ├── src/                          # All MATLAB code and model files
 
