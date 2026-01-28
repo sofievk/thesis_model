@@ -31,10 +31,13 @@ coal = zeros(T,1);
 for i = 1:1:T
     coal(i) = x(2*(T-1)+i)*A2t(i)*N;
 end
-% wind = zeros(T,1);
+
+% E3 = zeros(T,1);
 % for i = 1:1:T;
-%     wind(i) = x(2*(T-1)+T+i)*(A3t(i)*N);
+%     E3(i) = x(2*(T-1)+T+i)*(A3t(i)*N);
 % end
+
+
 %%%%%% INDEX FOR MINERAL STOCK = x0(2*(T-1)+2*T+i)
 mineral = zeros(T,1);
     mineral(1) = M0-x(2*(T-1)+2*T+1);
@@ -65,6 +68,7 @@ E3 = zeros(T,1);
 for i = 1:1:T
        E3(i) = psi*Gt1(i);
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 energy = zeros(T,1);
@@ -79,28 +83,31 @@ for i = 1:1:T
     fossil_fuel(i) = oil(i) + coal(i);
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Step 2: Carbon Emissions and Concentrations%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%%%%%%%%%%%%
+%%Emissions%%
+%%%%%%%%%%%%%
 emiss = zeros(T,1);
+emiss_coal = zeros(T,1);
+emiss_oil = zeros(T,1); 
 for i = 1:1:T
-    emiss(i) = oil(i)+ypsilon(i)*coal(i);
+    emiss_coal(i) = ypsilon(i)*coal(i)*0.1008;   % Based on conversion of 1000 TWh to GtC for coal
+    emiss_oil(i) = oil(i)*0.0676;                % Based on conversion of 1000 TWh to GtC for oil
+    emiss(i) = emiss_coal(i)+emiss_oil(i);
 end
 
-S1t = zeros(T,1);        %Non-depreciating stock
-S2t_Sbar = zeros(T,1);   %Depreciating stock (S2t-Sbar)
+S1t = zeros(T,1);        %Non-depreciating carbon stock
+S2t_Sbar = zeros(T,1);   %Depreciating carbon stock (S2t-Sbar)
 St = zeros(T,1);         %Total carbon concentrations
 
 S1t(1) = S1_2000+phiL*emiss(1);
 S2t_Sbar(1) = (1-phi)*(S2_2000-Sbar)+phi0*(1-phiL)*emiss(1);
 St(1) = Sbar+S1t(1)+S2t_Sbar(1);
-
 for i = 1:1:T-1
     S1t(1+i) = S1t(i)+phiL*emiss(1+i);
     S2t_Sbar(1+i) = (1-phi)*S2t_Sbar(i)+phi0*(1-phiL)*emiss(1+i);
     St(1+i) = Sbar+S1t(1+i)+S2t_Sbar(1+i);
 end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Output and Consumption through T%%
@@ -156,6 +163,7 @@ for i = 1:1:n
     Gtn(i+1) = greenbgp(i) + (1-Delta_G)*Gtn(i);
     E3bgp(i) = psi*Gtn(i);
     En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
+        % En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3(T)*(1+gZ_green)^rho))^(1/rho);
     Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
         %Ytn(i) = (min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
     GDPn(i) = Ytn(i)/eta_GDP;

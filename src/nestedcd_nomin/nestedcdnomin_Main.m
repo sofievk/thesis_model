@@ -35,13 +35,13 @@ end
 %%Energy Aggregation%%
 %%%%%%%%%%%%%%%%%%%%%%
 
-% %% Option 1 (GHKT) 
+%%% Option 1 (GHKT) 
 % rho = -0.058;               %Elasticity of substitution = 0.945
 % kappa1 = 0.5429;            %Relative efficiency of oil
 % kappa2 = 0.1015;            %Relative efficiency of coal
 % kappa3 = 1-kappa1-kappa2;   %Relative efficiency of low-carbon technologies
 
-% %% Option 2 (Based on change in TWh 2014-2024)
+%%% Option 2 (Based on change in TWh 2014-2024)
 rho = -0.058;
 kappa1 = 0.455;
 kappa2 = 0.078;
@@ -54,41 +54,33 @@ N = 1;                      %Normalize population
 alpha = 0.33;               %Capital output share
 %alpha = 0.66;
 Y2024 = 110000;             %Base year (2024) annual GDP in billions of USD
-r2024 = 0.05;               %Base year annual net rate of return 
-r2024d = ((1+r2024)^10)-1;  %Base yer decadal net rate of return
+r2024 = 0.05;               %GHKT: Base year annual net rate of return 
+r2024d = ((1+r2024)^10)-1;  %GHKT: Base yer decadal net rate of return
 
-%%%Depreciation OPTION 1: delta = 100%
+%%Depreciation OPTION 1: delta = 100%
 delta = 1;                              %Annual depreciation rate
 Delta = (1-(1-delta)^10);               %Decadal depreciation rate
 K0 = (alpha*Y2024*10)/(r2024d+Delta);   %GHKT Base year capital stock in billions of USD
 
-% %%%Depreciation OPTION 2: delta = 65%, no recalibration:
+%%Depreciation OPTION 2: delta = 65%, no recalibration:
 % delta = 0.1;                            %Annual depreciation rate
 % Delta = (1-(1-delta)^10);               %Decadal depreciation rate
 % Delta1 = 1;                             %Decadal 100% depreciation rate
 % K0 = (alpha*Y2024*10)/(r2024d+Delta1);  %Base year capital stock in billions of USD
 
-% %Depreciation OPTION 3: delta = 65%, with recalibration:
+%%Depreciation OPTION 3: delta = 65%, with recalibration:
 % delta = 0.1;                            %Annual depreciation rate
 % Delta = (1-(1-delta)^10);               %Decadal depreciation rate
 % K0 = (alpha*Y2024*10)/(r2024d+Delta);   %Base year capital stock in billions of USD
 
-%Energy & TFP Calibration GHKT: 
- % pi00 = 1;               %Base period share of labor devoted to final goods production
- % E1_2008 = 3.43+1.68;    %GtC per annum
- % E2_2008 = 3.75;         %GtC per annum
- % E3_2008 = 1.95;         %GtC-eq per annum 
- % E0_2008 = ((kappa1*E1_2008^rho)+(kappa2*E2_2008^rho)+(kappa3*E3_2008^rho))^(1/rho);
- % E0 = E0_2008*10;        %GtC per decade
- % A0 = (Y2009*10)/((exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*((K0^alpha)*((N*pi00)^(1-alpha-v))*(E0^v)));  %Initial TFP based on Decadal production function
-
- %NEW (Using IEA data):
+%Recalibrated Energy (Using IEA data):
  pi00 = 1;               %Base period share of labor devoted to final goods production
- E1_2024 = 55.292;       %x1000 TWh per year
+ E1_2024 = 55.292;  %x1000 TWh per year
  E2_2024 = 45.851;       %x1000 TWh per year
  E3_2024 = 9.225;        %x1000 TWh per year
  E0_2024 = ((kappa1*E1_2024^rho)+(kappa2*E2_2024^rho)+(kappa3*E3_2024^rho))^(1/rho);
  E0 = E0_2024*10;        %x1000 TWh per decade
+
 
 %%%Productivity Growth Rates%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,9 +96,6 @@ gZ_coal = ((1+gZa_coal)^10)-1;                           %Decadal labor producti
 gZa_green = 0.02;                                         %Annual labor productivity growth rate (E3 sectors)
 gZ_green = ((1+gZa_green)^10)-1;                          %Decadal labor productivity growth rate (E3 sectors)
 
-%%%Productivity growth of capital in final goods production%%%
-gKa_y = 0.02;                       % annual
-gKd_y = ((1+gKa_y)^10)-1;           % decadal 
 
 %%%Final Goods Sector OPTION 1: Specify Labor Productivity Growth%%%
 %           gZa_y = 0.02;                               %Annual labor productivity growth rate in final goods sector
@@ -149,15 +138,14 @@ beta = (.985)^10;
 %%Coal production%%
 %%%%%%%%%%%%%%%%%%%
 A2t = zeros(T,1);
-%A2t(1) = 7693; %v1;GHKT 
-A2t(1) = 11169.231; %v3; x1000 TWh 
-%A2t(1) = 18340.4; %v4; x1000 TWh
+%A2t(1) = 7693;             % GHKT 
+A2t(1) = 11169.231;         % x1000 TWh 
 for i = 1:1:T-1
     A2t(i+1) = A2t(i)*(1+gZ_coal);
 end
 
 %%Coal Emissions%%
-% %%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%
 ypsilon = zeros(T,1);   %Coal carbon emissions coefficient
 a_yps = 8;              %Logistic curve coefficient
 b_yps = -0.05;          %Logistic curve coefficient
@@ -167,90 +155,96 @@ for i = 1:1:T+n
 end
 
 
-%%Graph for Figure S.1%%
-figure;
-plot(y,ypsilon(1:T),'-o')
-xlabel('Year','FontSize',11)
-ylabel('Coal Emissions Coefficient','FontSize',11)
-title('Coal Emissions Coefficient','FontSize',13)
-grid off;
-
 %%Low Carbon Energy Production%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 A3t = zeros(T,1);
-%A3t(1) = 1311;  %GHKT
-%A3t(1) = 865.14; %v1; Chazels Initial labour productivity in the low carbon energy sector E3, in Gt/L
-A3t(1) = 3399.331; %v3; x1000 TWh
-%A3t(1) = 2306.25;  %v4; in x1000 TWh
-%A3t(1) = 5581.86; %x1000 TWh (based on relative price between coal and renewables)
+%A3t(1) = 1311;             % GHKT
+A3t(1) = 3399.331;          % x1000 TWh
 for i = 1:1:T-1
     A3t(i+1) = A3t(i)*(1+gZ_green); 
 end
 
 %%Oil%%
 %%%%%%%
-
-%R0 = 253.8;    %Golosov
-%R0 = 1068;     %x1000 TWh lower bound guess (petrol)
-R0 = 2720;      %x1000 TWh upper bound guess (crude oil)
-%R0 = 5000;
+%R0 = 253.8;                % GHKT
+R0 = 2720;                  % x1000 TWh
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%SELF ADDED FOR ENERGY AND EXERGY
+%%Energy in Final Goods Production%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 en_K = zeros(T,1);
 eff_E = zeros(T,1);
 
-eff_E(1) = 0.33;                    % initial aggregate efficiency of energy to exergy
-en_K(1) = (eff_E(1) * E0)/(K0*10);  % x1000 TWh per decade
+eff_E(1) = 0.33;                        % initial energy-to-exergy efficiency
+%en_K(1) = (eff_E(1) * E0)/(K0);      % initial usable energy throughput of capital (x1000 TWh per decade per billion)
 
-gEk = 0.00;       % decadal growth rate of energy throughput of capital
-gEff = 0.00;
-% gEk = 0.02;         % decadal growth rate of energy throughput of capital
-% gEff = 0.02;        % decadal growth rate of energy-to-exergy efficiency
+%Test 1:
+en_K(1) = (Y2024*10)/(exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(((eff_E(1)*E0)/(K0))^alpha);
+
+%Test 2:
+%en_K(1) = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*((eff_E(1) * E0)/(K0));  
+ 
+
+
+%%%Decadal growth rates
+gEk = 0.00;                             % growth in energy throughput of capital
+gEff = 0.00;                            % growth in energy-to-exergy efficiency
+%gEk = 0.01;    
+%gEff = 0.02;     
 
 for i = 1:1:T-1
-    en_K(i+1) = en_K(i)*(1+gEk);    
+    en_K(i+1) = en_K(i)*(1+gEk)^10;    
     eff_E(i+1) = eff_E(i)*(1+gEff);  
 end
 
-%%%%%%%%%%%%           Self Added for Mineral Constraints          %%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%   Mineral Parameters  %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% !!!!!!!!! CHANGE LATER!!!!!!!!!!!!
-M0 = 2000;    % Initial mineral endowment in megatonnes, Mt
+%%% Initial mineral stock (MtCu)
+M0 = 2000;    
+%M0 = 1000;
+%M0 = 500;
 
-%delta_G = 0.1;                                        % Annual depreciation rate of green capital (potentially change later)
+%%% Initial green capital stock (MtCu)
+G0 = 53.8;                                             % MtCu Based on annual demand for clean tech in 2021 * 10
+%G0 = 5.38;
+
+%%% Green capital depreciation 
+%delta_G = 0.088;                                      % Annual depreciation rate of green capital 
+%delta_G = 0.1;                                        % Annual depreciation rate of green capital 
 delta_G = 1; 
-Delta_G = (1-(1-delta_G)^10);                           % Decadal depreciation rate
-G0 = 53.8;                                              % MtCu Based on annual demand for clean tech in 2021 * 10
-rho_E3 = -3;                                            % Parameter of substitution E3
-psi = 1.462;                                            % Energy obtained from given amount of green capital, in x1000TWh/MtCu
-phi_m = 1;                                              % Efficiency of minerals in producing green capital
+Delta_G = (1-(1-delta_G)^10);                          % Decadal depreciation rate
 
+%%% Other
+rho_E3 = -3;                                           % Parameter of substitution E3
+%psi = 1.462;                                          % Energy obtained from given amount of green capital, in x1000TWh/MtCu
+psi = 1;
+phi_m = 1.462;
+%phi_m = 1;                                            % Efficiency of minerals in producing green capital
 
-%% Relative efficiencies
-dkM = 0.00; 
-%dkM = 0.02;                                            % Annual decline in relative efficiency of minerals for green capital
+%%% Relative efficiencies
 kappaM = zeros(T,1);                                   % Relative efficiency of minerals in the production of green capital
 kappaL = zeros(T,1);                                   % Relative efficiency of labour in the production of green capital
+dkM = 0.00; 
+%dkM = 0.002;                                          % Annual decline in relative efficiency of minerals for green capital
 
 kappaM(1) = 0.75;   
 kappaL(1) = 1-kappaM(1);
 for i = 1:1:T-1
-    kappaM(1+i) = kappaM(1);
-    kappaL(1+i) = 1-kappaM(1);
-    % kappaM(1+i) = kappaM(i)*(1-dkM)^10;
-    % kappaL(1+i) = 1-kappaM(1+i);
+    % kappaM(1+i) = kappaM(1);
+    % kappaL(1+i) = 1-kappaM(1);
+    kappaM(1+i) = kappaM(i)*(1-dkM)^10;
+    kappaL(1+i) = 1-kappaM(1+i);
 end                                 
 
-% in_GDP = 1.3; 
-%Useful energy intensity of GDP
-u1_cap = en_K(1) * (K0*10);            %capital-side usable energy at T=1 in x1000TWh per decade 
-u1_energy = eff_E(1) * E0;             %energy-side usable energy at T=1 in x1000TWh per decade
+
+%%% Calibrating eta_GDP
+u1_cap = en_K(1) * (K0*10);            % capital-side usable energy at T=1 in x1000TWh per decade 
+u1_energy = eff_E(1) * E0;             % energy-side usable energy at T=1 in x1000TWh per decade
 usable1 = min(u1_cap, u1_energy); 
-Yt1_model = usable1.^alpha;       
-in_GDP = Yt1_model / (Y2024*10);
+Yt1_model = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(usable1.^alpha);       
+eta_GDP = Yt1_model/ (Y2024*10);       % output to GDP conversion (x1000TWh usable energy per 1 billion dollars)       
+
 
 
 
@@ -314,17 +308,16 @@ x0(2*(T-1)+T+T) = 0.01;
 %%Check Constraints and Objective Function Value at x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% for NEW PF lf: remove gamma
-f = nestedcdnomin_Objective(x0,A2t,A3t,Delta,Delta_G,in_GDP,en_K,eff_E,G0,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gKd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
-[c, ceq] = nestedcdnomin_Constraints(x0,A2t,A3t,Delta_G,Delta,in_GDP,en_K,eff_E,G0,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gKd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
+f = nestedcdnomin_Objective(x0,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
+[c, ceq] = nestedcdnomin_Constraints(x0,A2t,A3t,Delta_G,Delta,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
 
 %%%%%%%%%%%
 %%%SOLVE%%%
 %%%%%%%%%%%
 
-%OLD: options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','active-set');
+% Algorithm changed from interior-point (GHKT) to active-set (current);
 options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','interior-point');
-[x, fval,exitflag] = fmincon(@(x)nestedcdnomin_Objective(x,A2t,A3t,Delta,Delta_G,in_GDP,en_K,eff_E,G0,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gKd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)nestedcdnomin_Constraints(x,A2t,A3t,Delta,Delta_G,in_GDP,en_K,eff_E,G0,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gKd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), options);
+[x, fval,exitflag] = fmincon(@(x)nestedcdnomin_Objective(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)nestedcdnomin_Constraints(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), options);
 
 
 %%Save Output%%
@@ -335,13 +328,16 @@ options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',5000
 %save('x_nomin_optimum_lf','x')
 save('x_nomin_optimum','x')
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 3: Compute Allocations and Carbon Taxes  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%
-%%Energy%%
-%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Energy Production   %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Oil in x1000 TWh 
 oil = zeros(T,1);
     oil(1) = R0-x(T);
 for i = 1:1:T-2
@@ -353,20 +349,20 @@ ex_rates = zeros(T-1,1);
 for i = 1:1:T-1
     ex_rates(i) = oil(i)/x(T+i-1);
 end
+
+%%% Coal in x1000 TWh 
 coal = zeros(T,1);
 for i = 1:1:T
     coal(i) = x(2*(T-1)+i)*A2t(i)*N;
 end
 
-%% LOW CARBON ENERGY WITHOUT MINERAL CONSTRAINTS: 
+%%% Low carbon energy in x1000TWH
 E3 = zeros(T,1);
-for i = 1:1:T;
-    E3(i) = x(2*(T-1)+T+i)*(A3t(i)*N);
+for i = 1:1:T
+    E3(i) = (x(2*(T-1)+T+i))*A3t(i)*N;
 end
 
-
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%%%% INDEX FOR MINERAL STOCK = x0(2*(T-1)+2*T+i)
+% %%% Minerals in MtCu 
 % mineral = zeros(T,1);
 %     mineral(1) = M0-x(2*(T-1)+2*T+1);
 % for i = 1:1:T-2
@@ -375,14 +371,13 @@ end
 %     ex_Min = (x(2*(T-1)+2*T+(T-3))-x(2*(T-1)+2*T+(T-2)))/(x(2*(T-1)+2*T+(T-3)));    %Fraction of minerals left extracted in period T-1
 %     mineral(T) = x(2*(T-1)+2*T+(T-2))*ex_Min;
 % 
-% %% Index for labour share Green Energy = x0(2*(T-1)+T+i)
-% %%Green capital production
+% %%% Green capital (flow) in x1000TWh 
 % green = zeros(T,1);
 % for i = 1:1:T
 %      green(i) = (((kappaL(i)*(x(2*(T-1)+T+i)*A3t(i)*N)^rho_E3)+(kappaM(i)*(phi_m*mineral(i))^rho_E3)))^(1/rho_E3);
 % end
 % 
-% %%Green capital stock (comment out for Delta_G = 1)
+% %%% Green capital (stock) in x1000TWh
 % Gt1 = zeros(T,1);
 % Gt1(1) = green(1)+(1-Delta_G)*G0;
 % for i = 1:1:T-2
@@ -390,26 +385,28 @@ end
 % end
 %  Gt1(T) = green(T)+(1-Delta_G)*Gt1(T-1);
 % 
-% %%Low carbon energy production, eq (10)
+% %%% Low carbon energy production in x1000 TWh
 % E3 = zeros(T,1);
 % for i = 1:1:T
 %        E3(i) = psi*Gt1(i);
 % end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%% Total Energy in x1000 TWh
 energy = zeros(T,1);
 for i = 1:1:T
     energy(i) = ((kappa1*oil(i)^rho)+(kappa2*coal(i)^rho)+(kappa3*E3(i)^rho))^(1/rho);
 end
 
-%% compute fossil fuel use
+
+%%% Diagnostic plots
+
+%%%% compute fossil fuel use
 fossil_fuel = zeros(T,1);
 for i = 1:1:T
     fossil_fuel(i) = oil(i) + coal(i);
 end
 
-%% compute energy shares
+%%% compute energy shares
 total_energy = zeros(T,1);
 share_coal = zeros(T,1);
 share_oil = zeros(T,1);
@@ -421,32 +418,34 @@ for i = 1:1:T
     share_E3 (i) = E3(i) / total_energy(i);
 end
 
-
-%% Plot energy shares over time
+%%% FIGURE 3: The energy mix
+z = 30;
 figure;
-plot(share_coal, 'LineWidth', 1.5);
 hold on;
-plot(share_oil, 'LineWidth', 1.5);
-plot(share_E3, 'LineWidth', 1.5);
-xlabel('Year');
+plot(y2(1:z),share_E3(1:z),'Color',[0.2 0.7 0.3], 'LineWidth', 1.5);
+plot(y2(1:z), share_coal(1:z),'Color',[0.55 0.27 0.07], 'LineWidth', 1.5);
+plot(y2(1:z),share_oil(1:z),'Color',[0.95 0.65 0.2], 'LineWidth', 1.5);
 ylabel('Energy Share');
-title('Allocation of Energy Sources Over Time');
-legend('Coal', 'Oil', 'Low Carbon Energy');
-hold off;
+xlabel('Year')
+title('Figure 3: Energy mix')
+legend('Low Carbon Energy','Coal', 'Oil');
+grid off;
+xlim([2025 2250]);
 
-%% Plot energy production over time
+%% Diagnostic plot energy sources over time
+z = 20;
 figure;
-plot(coal, '-r', 'LineWidth', 2); 
 hold on;
-plot(oil, '-b', 'LineWidth', 2);
-plot(E3, '-g', 'LineWidth', 2);
+plot(y2(1:z),oil(1:z), '-b', 'LineWidth', 2);
+plot(y2(1:z),E3(1:z), '-g', 'LineWidth', 2);
+plot(y2(1:z),coal(1:z), '-r', 'LineWidth', 2); 
 ylabel('Energy (x1000 TWh)')
-
 xlabel('Year');
 ylabel('Energy production (TWh)');
 title('Energy production from Coal, Oil, and Renewables');
-legend({'Coal', 'Oil', 'Renewables'}, 'Location', 'best');
-
+legend({'Oil', 'Low-carbon', 'Coal'}, 'Location', 'best');
+grid off;
+xlim([2020 2200])
 
 
 %%%%%%%%%%%%%
@@ -456,25 +455,10 @@ emiss = zeros(T,1);
 emiss_coal = zeros(T,1);
 emiss_oil = zeros(T,1); 
 for i = 1:1:T
-    emiss_coal(i) = ypsilon(i)*coal(i)*0.1008; 
-    emiss_oil(i) = oil(i)* 0.0676; 
+    emiss_coal(i) = ypsilon(i)*coal(i)*0.1008;   % Based on conversion of 1000 TWh to GtC for coal
+    emiss_oil(i) = oil(i)*0.0676;                % Based on conversion of 1000 TWh to GtC for oil
     emiss(i) = emiss_coal(i)+emiss_oil(i);
 end
-
-%plot stacked emissions
-time = 1:length(emiss);
-figure;
-cumul_emiss = [emiss_coal(:),emiss_oil(:)];
-h = area(time, cumul_emiss);
-hold on;
-h(1).FaceColor = [0.6 0 0];
-h(2).FaceColor = [0.8 0.6 0.2]; 
-plot(time,emiss,'LineWidth',1.5);
-ylabel('Emissions');
-xlabel('Year');
-title('Emissions by energy source');
-legend({'Coal','Oil','Total'},'Location','best');
-
 
 S1t = zeros(T,1);        %Non-depreciating carbon stock
 S2t_Sbar = zeros(T,1);   %Depreciating carbon stock (S2t-Sbar)
@@ -489,6 +473,7 @@ for i = 1:1:T-1
     St(1+i) = Sbar+S1t(1+i)+S2t_Sbar(1+i);
 end
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Output and Consumption through T%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -499,25 +484,26 @@ Kt1 = zeros(T,1);
 GDP = zeros(T,1);
 Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
     %Yt(1) = (min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
-GDP(1) = Yt(1)/(in_GDP);
+    GDP(1) = Yt(1)/(eta_GDP);
 Ct(1) = (1-x(1))*GDP(1);
 Kt1(1) = x(1)*GDP(1)+(1-Delta)*K0;
 for i = 1:1:T-2
     Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
           %Yt(1+i) = (min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
-    GDP(1+i) = Yt(1+i)/(in_GDP);  %in billion dollars
+    GDP(1+i) = Yt(1+i)/(eta_GDP);  %in billion dollars
     Kt1(1+i) = x(1+i)*GDP(1+i)+(1-Delta)*Kt1(i);
     Ct(1+i) = (1-x(i+1))*GDP(1+i); 
 end
 Yt(T) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
     %Yt(T) =  (min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
-GDP(T) = Yt(T)/in_GDP;
+GDP(T) = Yt(T)/eta_GDP;
 theta = x(T-1);
 Ct(T) = GDP(T)*(1-theta);
 Kt1(T) = theta*GDP(T)+(1-Delta)*Kt1(T-1);
 
 %Compare savings rate theta to predicted BGP savings rate:
 %theta_BGP = alpha*(((((1+gZBGP)^sigma)/beta)-(1-Delta))^(-1))*(1+gZBGP-1+Delta)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Output and Consumption past T to T+n%%
@@ -529,47 +515,50 @@ GDPn = zeros(n,1);
 Ktn(1) = Kt1(T); 
 oiln = zeros(n,1);
 En = zeros(n,1);
-% minbgp = zeros(n,1);
-% greenbgp = zeros(n,1);
-% E3bgp = zeros(n,1);
-% Gtn = zeros(n+1,1);
-% Gtn(1) = Gt1(T);
+minbgp = zeros(n,1);
+greenbgp = zeros(n,1);
+E3bgp = zeros(n,1);
+Gtn = zeros(n+1,1);
+Gtn(1) = Gt1(T);
 
 
 for i = 1:1:n
     oiln(i) = ex_Oil*x(2*(T-1))*((1-ex_Oil)^i);     %Oil continues to be extracted at rate from period T-1
-    % minbgp(i) = ex_Min*x(2*(T-1)+2*T+(T-1))*((1-ex_Min)^i);
-    % greenbgp(i) = ((kappaL(T)*(x(2*(T-1)+2*T)*(A3t(T)*(1+gZ_green)^i)^rho_E3)+(kappaM(T)*minbgp(i))^(rho_E3)))^(1/rho_E3);
-    % Gtn(i+1) = greenbgp(i) + (1-Delta_G)*Gtn(i);
-    % E3bgp(i) = psi*Gtn(i);
-    % En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
-    En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3(T)^rho))^(1/rho);
+    %minbgp(i) = ex_Min*x(2*(T-1)+2*T+(T-1))*((1-ex_Min)^i);
+    %greenbgp(i) = ((kappaL(T)*(x(2*(T-1)+2*T)*(A3t(T)*(1+gZ_green)^i)^rho_E3)+(kappaM(T)*minbgp(i))^(rho_E3)))^(1/rho_E3);
+    %Gtn(i+1) = greenbgp(i) + (1-Delta_G)*Gtn(i);
+    %E3bgp(i) = psi*Gtn(i);
+    En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
     Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
         %Ytn(i) = (min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
-    GDPn(i) = Ytn(i)/in_GDP;
+    GDPn(i) = Ytn(i)/eta_GDP;
     Ct(T+i) = (1-theta)*GDPn(i);
     Ktn(i+1) = theta*GDPn(i)+(1-Delta)*Ktn(i);
     Yt(T+i) = Ytn(i);
     GDP(T+i) = GDPn(i);
 end
 
-%% Ratio of capital capacity versus energy supply
+%%% Diagnostic plot: Ratio of capital capacity versus energy supply
 capacity_k = zeros(T,1);
 supply_e = zeros(T,1);
 ratio = zeros(T,1);
 
-for i = 1:1:T
-capacity_k(i) = en_K(i)*Kt1(i);
-supply_e(i) = eff_E(i)*energy(i);
-ratio(i) = capacity_k(i)/supply_e(i);
+capacity_k(1) = en_K(1)*K0;
+supply_e(1) = eff_E(1)*energy(1);
+ratio(1) = capacity_k(1)/supply_e(1);
+for i = 1:1:T-1
+capacity_k(1+i) = en_K(i+1)*Kt1(i);
+supply_e(1+i) = eff_E(i)*energy(i);
+ratio(1+i) = capacity_k(1+i)/supply_e(1+i);
 end
 
 figure;
+hold on;
 plot(1:T,ratio,'-o');
 xlabel('period');
 ylabel('Ratio');
-title('Energy-Capacity versus Energy Supply');
-
+grid off;
+title('Figure A8: Energy-Capacity versus Energy Supply');
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -594,11 +583,12 @@ lambda_hat = zeros(T,1);    %Carbon tax/GDP ratio
 for i = 1:1:T+n
     temp2 = zeros(T+n-i+1,1);
         for j = 1:1:T+n-i+1
-            temp2(j) = (beta^(j-1))*(MU(i+j-1)/MU(i))*(-gamma(T))*Yt(i+j-1)*MD(j);
+            temp2(j) = (beta^(j-1))*(MU(i+j-1)/MU(i))*(-gamma(T))*GDP(i+j-1)*MD(j);
         end
      carbon_tax(i) = sum(temp2)*(-1);
-     lambda_hat(i) = carbon_tax(i)/Yt(i);
+     lambda_hat(i) = carbon_tax(i)/GDP(i);
 end
+
 
 %%Temperature%%
 %%%%%%%%%%%%%%%%%
@@ -607,7 +597,6 @@ temp = zeros(T,1);          % Initialize the temperature vector
 for i = 1:1:T
     temp(i) = lambda * log2(St(i)/Sbar);
 end
- 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 4: Save Allocations and Carbon Taxes  %%%

@@ -75,11 +75,12 @@ K0 = (alpha*Y2024*10)/(r2024d+Delta);   %GHKT Base year capital stock in billion
 
 %Recalibrated Energy (Using IEA data):
  pi00 = 1;               %Base period share of labor devoted to final goods production
- E1_2024 = 55.292;       %x1000 TWh per year
+ E1_2024 = 55.292;  %x1000 TWh per year
  E2_2024 = 45.851;       %x1000 TWh per year
  E3_2024 = 9.225;        %x1000 TWh per year
  E0_2024 = ((kappa1*E1_2024^rho)+(kappa2*E2_2024^rho)+(kappa3*E3_2024^rho))^(1/rho);
- E0 = E0_2024*10;        %x1000 TWh per decade
+ E0 = E0_2024*100;        %x1000 TWh per decade
+
 
 %%%Productivity Growth Rates%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,6 +178,17 @@ eff_E = zeros(T,1);
 eff_E(1) = 0.33;                        % initial energy-to-exergy efficiency
 en_K(1) = (eff_E(1) * E0)/(K0*10);      % initial usable energy throughput of capital (x1000 TWh per decade per billion)
 
+%Test 1:
+%en_K(1) = (eff_E(1) * E0)/(K0);         % without multiplication *10 (Golosov also doesn't do that)
+
+%Test 2:
+%en_K(1) = (Y2024*10)/(exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(((eff_E(1)*E0)/(K0))^alpha);
+
+%Test 3:
+%en_K(1) = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*((eff_E(1) * E0)/(K0));  
+ 
+
+
 %%%Decadal growth rates
 gEk = 0.00;                             % growth in energy throughput of capital
 gEff = 0.00;                            % growth in energy-to-exergy efficiency
@@ -207,9 +219,11 @@ delta_G = 1;
 Delta_G = (1-(1-delta_G)^10);                          % Decadal depreciation rate
 
 %%% Other
-rho_E3 = -3;                                            % Parameter of substitution E3
-psi = 1.462;                                            % Energy obtained from given amount of green capital, in x1000TWh/MtCu
-phi_m = 1;                                              % Efficiency of minerals in producing green capital
+rho_E3 = -3;                                           % Parameter of substitution E3
+%psi = 1.462;                                          % Energy obtained from given amount of green capital, in x1000TWh/MtCu
+psi = 1;
+phi_m = 1.462;
+%phi_m = 1;                                            % Efficiency of minerals in producing green capital
 
 %%% Relative efficiencies
 kappaM = zeros(T,1);                                   % Relative efficiency of minerals in the production of green capital
@@ -231,7 +245,8 @@ end
 u1_cap = en_K(1) * (K0*10);            % capital-side usable energy at T=1 in x1000TWh per decade 
 u1_energy = eff_E(1) * E0;             % energy-side usable energy at T=1 in x1000TWh per decade
 usable1 = min(u1_cap, u1_energy); 
-Yt1_model = usable1.^alpha;       
+%Yt1_model = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(usable1.^alpha);   
+Yt1_model = (usable1.^alpha);   
 eta_GDP = Yt1_model/ (Y2024*10);       % output to GDP conversion (x1000TWh usable energy per 1 billion dollars)       
 
 
@@ -246,7 +261,7 @@ vars = 2*T+3*(T-1);         %Number of variables = 147
 %%Define upper and lower bounds%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%NEW
+%%BOUNDS WITH MINERAL CONSTRAINTS
 lb = zeros(vars,1);
 ub = ones(vars,1);
 for i = 1:1:2*T
@@ -261,6 +276,20 @@ for i = 1:1:T-1
     ub(2*(T-1)+2*T+i) = M0;        %For mineral stock remaining 
     lb(2*(T-1)+2*T+i) = 0.00000001;%For mineral stock remaining 
 end
+
+%%BOUNDS WITHOUT MINERAL CONSTRAINTS
+% lb = zeros(vars,1);
+% ub = ones(vars,1);
+% for i = 1:1:2*T
+%     ub(2*(T-1)+i) = 1;        %For coal and E3 labor shares 
+%     lb(2*(T-1)+i) = 0.00000001;  %For coal and E3 labor shares 
+% end
+% for i = 1:1:T-1
+%     ub(i) = 1;                     %For savings rate
+%     lb(i) = 0.00000001;            %For savings rate
+%     ub((T-1)+i) = R0;              %For oil stock remaining Rt
+%     lb((T-1)+i) = 0.00000001;      %For oil stock remaining Rt
+% end
 
 %%Make Initial Guess x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,7 +319,7 @@ end
 %%% OPTION 1- Step 2: 
 %x0 = x;
 
-%%% OPTION 2: NEUTRAL STARTING POINT %%
+%%% OPTION 2: NEUTRAL STARTING POINT WITH MINERAL CONSTRAINTS%%
 
 x0 = zeros(vars,1);
 for i = 1:1:T-1
@@ -302,6 +331,19 @@ for i = 1:1:T-1
 end
 x0(2*(T-1)+T) = 0.002;
 x0(2*(T-1)+T+T) = 0.01;
+
+% %WITHOUT MINERAL CONSTRAINTS
+% x0 = zeros(vars,1);
+% for i = 1:1:T-1
+%      x0(i) = 0.25;                       %savings rate
+%      x0((T-1)+i) = R0-((R0/1.1)/T)*i;    %oil stock remaining
+%      x0(2*(T-1)+i) = 0.002;              %labour share coal
+%      x0(2*(T-1)+T+i) = 0.01;             %labour share green capital
+% end
+% x0(2*(T-1)+T) = 0.002;
+% x0(2*(T-1)+T+T) = 0.01;
+
+
 
 %%Check Constraints and Objective Function Value at x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,6 +405,12 @@ for i = 1:1:T
     coal(i) = x(2*(T-1)+i)*A2t(i)*N;
 end
 
+% %%% Low carbon in x1000 TWh 
+% E3 = zeros(T,1);
+% for i = 1:1:T
+%     E3(i) = x(2*(T-1)+T+i)*A3t(i)*N;
+% end
+
 %%% Minerals in MtCu 
 mineral = zeros(T,1);
     mineral(1) = M0-x(2*(T-1)+2*T+1);
@@ -372,13 +420,13 @@ end
     ex_Min = (x(2*(T-1)+2*T+(T-3))-x(2*(T-1)+2*T+(T-2)))/(x(2*(T-1)+2*T+(T-3)));    %Fraction of minerals left extracted in period T-1
     mineral(T) = x(2*(T-1)+2*T+(T-2))*ex_Min;
 
-%%% Green capital (flow) in MtCu 
+%%% Green capital (flow) in x1000TWh 
 green = zeros(T,1);
 for i = 1:1:T
      green(i) = (((kappaL(i)*(x(2*(T-1)+T+i)*A3t(i)*N)^rho_E3)+(kappaM(i)*(phi_m*mineral(i))^rho_E3)))^(1/rho_E3);
 end
 
-%%% Green capital (stock) in MtCu
+%%% Green capital (stock) in x1000TWh
 Gt1 = zeros(T,1);
 Gt1(1) = green(1)+(1-Delta_G)*G0;
 for i = 1:1:T-2
@@ -433,20 +481,20 @@ legend('Low Carbon Energy','Coal', 'Oil');
 grid off;
 xlim([2025 2250]);
 
-%%% Diagnostic plot energy sources over time
-% z = 20;
-% figure;
-% hold on;
-% plot(y2(1:z),oil(1:z), '-b', 'LineWidth', 2);
-% plot(y2(1:z),E3(1:z), '-g', 'LineWidth', 2);
-% plot(y2(1:z),coal(1:z), '-r', 'LineWidth', 2); 
-% ylabel('Energy (x1000 TWh)')
-% xlabel('Year');
-% ylabel('Energy production (TWh)');
-% title('Energy production from Coal, Oil, and Renewables');
-% legend({'Oil', 'Low-carbon', 'Coal'}, 'Location', 'best');
-% grid off;
-% xlim([2020 2200])
+%% Diagnostic plot energy sources over time
+z = 20;
+figure;
+hold on;
+plot(y2(1:z),oil(1:z), '-b', 'LineWidth', 2);
+plot(y2(1:z),E3(1:z), '-g', 'LineWidth', 2);
+plot(y2(1:z),coal(1:z), '-r', 'LineWidth', 2); 
+ylabel('Energy (x1000 TWh)')
+xlabel('Year');
+ylabel('Energy production (TWh)');
+title('Energy production from Coal, Oil, and Renewables');
+legend({'Oil', 'Low-carbon', 'Coal'}, 'Location', 'best');
+grid off;
+xlim([2020 2200])
 
 
 %%%%%%%%%%%%%
@@ -456,8 +504,8 @@ emiss = zeros(T,1);
 emiss_coal = zeros(T,1);
 emiss_oil = zeros(T,1); 
 for i = 1:1:T
-    emiss_coal(i) = ypsilon(i)*coal(i)*0.1008; 
-    emiss_oil(i) = oil(i)*0.0676; 
+    emiss_coal(i) = ypsilon(i)*coal(i)*0.1008;   % Based on conversion of 1000 TWh to GtC for coal
+    emiss_oil(i) = oil(i)*0.0676;                % Based on conversion of 1000 TWh to GtC for oil
     emiss(i) = emiss_coal(i)+emiss_oil(i);
 end
 
@@ -530,6 +578,7 @@ for i = 1:1:n
     Gtn(i+1) = greenbgp(i) + (1-Delta_G)*Gtn(i);
     E3bgp(i) = psi*Gtn(i);
     En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
+        %En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3(T)*(1+gZ_green)^rho))^(1/rho);
     Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
         %Ytn(i) = (min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
     GDPn(i) = Ytn(i)/eta_GDP;
@@ -584,10 +633,10 @@ lambda_hat = zeros(T,1);    %Carbon tax/GDP ratio
 for i = 1:1:T+n
     temp2 = zeros(T+n-i+1,1);
         for j = 1:1:T+n-i+1
-            temp2(j) = (beta^(j-1))*(MU(i+j-1)/MU(i))*(-gamma(T))*Yt(i+j-1)*MD(j);
+            temp2(j) = (beta^(j-1))*(MU(i+j-1)/MU(i))*(-gamma(T))*GDP(i+j-1)*MD(j);
         end
      carbon_tax(i) = sum(temp2)*(-1);
-     lambda_hat(i) = carbon_tax(i)/Yt(i);
+     lambda_hat(i) = carbon_tax(i)/GDP(i);
 end
 
 
@@ -619,271 +668,293 @@ end
 %%%%%//////////    (A) Current Run    \\\\\\\\\\\\%%%
 % Uncomment and run to show outcomes under current parameterization %
 
-%%%%(A) Saves
-% %%% Extract from x-vector
-% r_current_run = x(1:T-1);
-% save('r_current_run','r_current_run');
-% oil_stock_current_run = x(T:2*(T-1));
-% save('oil_stock_current_run','oil_stock_current_run');
-% N2_current_run = x(2*(T-1)+1:3*(T-1));
-% save('N2_current_run', 'N2_current_run');
-% N3_current_run = x(2*(T-1)+T+1:2*(T-1)+2*T);
-% save('N3_current_run','N3_current_run');
-% shareK_current_run = x(2*(T-1)+2*T+1 : 2*(T-1)+2*T-1); 
-% save('shareK_current_run','shareK_current_run');
-% mineral_stock_current_run = x(4*T-1:5*T-3);
-% save('mineral_stock_current_run','mineral_stock_current_run');
-% ypsilon_ghkt = ypsilon;
-% save('ypsilon_ghkt','ypsilon_ghkt'); 
-%
-%
-% % Save
-% energy_current_run = energy;
-% save('energy_current_run','energy_current_run')
-% fossil_fuel_current_run = fossil_fuel;
-% save('fossil_fuel_current_run','fossil_fuel_current_run')
-% oil_current_run = oil;
-% save('oil_current_run','oil_current_run')
-% ex_rates_current_run = ex_rates;
-% save('ex_rates_current_run','ex_rates_current_run')
-% coal_current_run = coal;
-% save('coal_current_run','coal_current_run')
-% E3_current_run = E3;
-% save('E3_current_run','E3_current_run')
-% lambda_hat_current_run = lambda_hat;
-% save('lambda_hat_current_run','lambda_hat_current_run')
-% carbon_tax_current_run = carbon_tax;
-% save('carbon_tax_current_run','carbon_tax_current_run')
-% Yt_current_run = Yt;
-% save('Yt_current_run','Yt_current_run')
-% Ct_current_run = Ct;
-% save('Ct_current_run','Ct_current_run')
-% temp_current_run = temp;
-% save('temp_current_run','temp_current_run');
-% carbon_current_run = emiss;
-% save('carbon_current_run','carbon_current_run');
-% cumul_emiss_current_run = St;
-% save('cumul_emiss_current_run','cumul_emiss_current_run');
-% mineral_current_run = mineral;
-% save('mineral_current_run','mineral_current_run');
-% green_current_run = green;
-% save('green_current_run','green_current_run');
-% gdp_current_run = GDP; 
-% save('gdp_current_run', 'gdp_current_run');
-% Gt1_current_run = Gt1;
-% save('Gt1_current_run','Gt1_current_run');
-% emiss_coal_current_run = emiss_coal;
-% save('emiss_coal_current_run','emiss_coal_current_run');
-% emiss_oil_current_run = emiss_oil;
-% save('emiss_oil_current_run','emiss_oil_current_run');
+%%%(A) Saves
+%%% Extract from x-vector
+r_current_run = x(1:T-1);
+save('r_current_run','r_current_run');
+oil_stock_current_run = x(T:2*(T-1));
+save('oil_stock_current_run','oil_stock_current_run');
+N2_current_run = x(2*(T-1)+1:3*(T-1));
+save('N2_current_run', 'N2_current_run');
+N3_current_run = x(2*(T-1)+T+1:2*(T-1)+2*T);
+save('N3_current_run','N3_current_run');
+shareK_current_run = x(2*(T-1)+2*T+1 : 2*(T-1)+2*T-1); 
+save('shareK_current_run','shareK_current_run');
+mineral_stock_current_run = x(4*T-1:5*T-3);
+save('mineral_stock_current_run','mineral_stock_current_run');
+ypsilon_ghkt = ypsilon;
+save('ypsilon_ghkt','ypsilon_ghkt'); 
+
+
+% Save
+energy_current_run = energy;
+save('energy_current_run','energy_current_run')
+fossil_fuel_current_run = fossil_fuel;
+save('fossil_fuel_current_run','fossil_fuel_current_run')
+oil_current_run = oil;
+save('oil_current_run','oil_current_run')
+ex_rates_current_run = ex_rates;
+save('ex_rates_current_run','ex_rates_current_run')
+coal_current_run = coal;
+save('coal_current_run','coal_current_run')
+E3_current_run = E3;
+save('E3_current_run','E3_current_run')
+lambda_hat_current_run = lambda_hat;
+save('lambda_hat_current_run','lambda_hat_current_run')
+carbon_tax_current_run = carbon_tax;
+save('carbon_tax_current_run','carbon_tax_current_run')
+Yt_current_run = Yt;
+save('Yt_current_run','Yt_current_run')
+Ct_current_run = Ct;
+save('Ct_current_run','Ct_current_run')
+temp_current_run = temp;
+save('temp_current_run','temp_current_run');
+carbon_current_run = emiss;
+save('carbon_current_run','carbon_current_run');
+cumul_emiss_current_run = St;
+save('cumul_emiss_current_run','cumul_emiss_current_run');
+mineral_current_run = mineral;
+save('mineral_current_run','mineral_current_run');
+green_current_run = green;
+save('green_current_run','green_current_run');
+gdp_current_run = GDP; 
+save('gdp_current_run', 'gdp_current_run');
+Gt1_current_run = Gt1;
+save('Gt1_current_run','Gt1_current_run');
+emiss_coal_current_run = emiss_coal;
+save('emiss_coal_current_run','emiss_coal_current_run');
+emiss_oil_current_run = emiss_oil;
+save('emiss_oil_current_run','emiss_oil_current_run');
 
 %%%%(A) Figures
-% 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%      Graph Carbon Tax    %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%Carbon Tax per Unit of GDP
+load('lambda_hat_current_run','lambda_hat_current_run')
+
+z = 25;
+figure;
+plot(y2(1:z), lambda_hat_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Carbon Tax/GDP', 'FontSize', 11);
+ylim([7.5e-05, 30.5e-05]);
+title('Carbon Tax to GDP ratio (new production function)');
+xlim([2025 2225])
+
+%% Carbon Tax in $/mtC
+load('carbon_tax_current_run','carbon_tax_current_run')
+
+z = 30;
+figure;
+plot(y2(1:z), carbon_tax_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
+title('Carbon Tax (new production function)');
+xlim([2025 2225])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  Energy Use Over Time  %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Energy
+load('energy_current_run.mat','energy_current_run')
+
+z = 25;
+figure;
+plot(y2(1:z), energy_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('TWh', 'FontSize', 11);
+title('Energy Use (new production function)');
+xlim([2025 2225])
+
+%% Fossil Fuel
+load('fossil_fuel_current_run.mat','fossil_fuel_current_run')
+
+z = 25;
+figure(Name='Fossil Fuel Use');
+plot(y2(1:z), fossil_fuel_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Energy (TWh)', 'FontSize', 11);
+title('Fossil Fuel Use (new production function)');
+xlim([2025 2225])
+
+%% Oil
+load('oil_current_run.mat','oil_current_run')
+
+z = 25;
+figure(Name = 'Oil Use');
+plot(y2(1:z), oil_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Energy (TWh)', 'FontSize', 11);
+title('Oil Use (new production function)');
+xlim([2025 2225])
+
+%% Fraction of oil left extracted
+load('ex_rates_current_run.mat','ex_rates_current_run')
+
+z = 25;
+figure;
+plot(y2(1:z), ex_rates_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Rate', 'FontSize', 11);
+title('Extraction rates of oil (new production function)');
+xlim([2025 2225])
+
+%% Coal
+load('coal_current_run.mat','coal_current_run')
+
+z = 25;
+figure(Name ='Coal Use');
+plot(y2(1:z), coal_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Energy (TWh)', 'FontSize', 11);
+title('Coal Use (new production function)');
+xlim([2025 2225])
+
+%% Low Carbon Energy
+load('E3_current_run.mat','E3_current_run')
+
+z = 25;
+figure(Name = 'Wind');
+plot(y2(1:z), E3_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Energy (TWh)', 'FontSize', 11);
+title('Low Carbon Energy Use (new production function)');
+xlim([2025 2225])
+
+%% Mineral Use
+load('mineral_current_run', 'mineral_current_run')
+
+z = 25;
+figure(Name ='Mineral Use');
+plot(y2(1:z), mineral_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Minerals (MtCu)', 'FontSize', 11);
+title('Mineral Use (new production function)');
+xlim([2025 2225])
+
+%% Mineral Stock
+load('mineral_stock_current_run', 'mineral_stock_current_run')
+
+z = 25;
+figure(Name ='Mineral Stock');
+plot(y2(1:z), mineral_stock_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Minerals (MtCu)', 'FontSize', 11);
+title('Mineral Stock (new production function)');
+
+%% Green Capital
+load('Gt1_current_run', 'Gt1_current_run')
+
+z = 25;
+figure(Name ='Green Capital Stock');
+plot(y2(1:z), Gt1_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Green Capital Stock (MtCu)', 'FontSize', 11);
+title('Green Capital Stock (new production function)');
+xlim([2025 2225])
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%      Graph Carbon Tax    %%
+% %%%  Climate Impact        %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% %Carbon Tax per Unit of GDP
-% load('lambda_hat_current_run','lambda_hat_current_run')
-% 
-% z = 25;
-% figure;
-% plot(y2(1:z), lambda_hat_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Carbon Tax/GDP', 'FontSize', 11);
-% ylim([7.5e-05, 30.5e-05]);
-% title('Carbon Tax to GDP ratio (new production function)');
-% xlim([2025 2225])
-% 
-% %% Carbon Tax in $/mtC
-% load('carbon_tax_current_run','carbon_tax_current_run')
-% 
-% z = 10;
-% figure;
-% plot(y2(1:z), carbon_tax_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
-% title('Carbon Tax (new production function)');
-% xlim([2025 2225])
-% 
+
+%% Total Emissions
+load('carbon_current_run', 'carbon_current_run')
+
+z = 25;
+figure(Name='Total Emissions');
+plot(y2(1:z), carbon_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Emissions (GtC)', 'FontSize', 11);
+title('Emissions (new production function)');
+xlim([2025 2225])
+
+%% Coal Emissions
+load('emiss_coal_current_run', 'emiss_coal_current_run')
+
+z = 25;
+figure(Name='Coal Emissions (GtC)');
+plot(y2(1:z), emiss_coal_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Emissions (GtC)', 'FontSize', 11);
+title('Emissions from Coal');
+xlim([2025 2225])
+
+%% Oil Emissions
+load('emiss_oil_current_run', 'emiss_oil_current_run')
+
+z = 25;
+figure(Name='Oil Emissions (GtC)');
+plot(y2(1:z), emiss_oil_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Emissions (GtC)', 'FontSize', 11);
+title('Emissions from Oil');
+xlim([2025 2225])
+
+%% Temperature
+load('temp_current_run', 'temp_current_run')
+
+figure(Name='Temperature Increase');
+plot(y2(1:T), temp_current_run, ' -r', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Temperature Increase (degrees C)', 'FontSize', 11);
+title('Temperature Increase (new production function)');
+xlim([2025 2225])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%  Labour shares         %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Labour share to green capital
+load('N3_current_run', 'N3_current_run')
+
+z = 25;
+figure(Name='Labour Share Green Capital');
+plot(y2(1:z), N3_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Share to Green Capital Production (newpf)');
+xlim([2025 2225])
+
+%% Labour share to coal
+load('N2_current_run', 'N2_current_run')
+
+z = 25;
+figure(Name='Labour Share Coal');
+plot(y2(1:z), N2_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Share to Coal Production (newpf)');
+xlim([2025 2225])
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%  Energy Use Over Time  %%%
+% %%%  GDP Growth Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% %% Energy
-% load('energy_current_run.mat','energy_current_run')
-% 
-% z = 25;
-% figure;
-% plot(y2(1:z), energy_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('TWh', 'FontSize', 11);
-% title('Energy Use (new production function)');
-% xlim([2025 2225])
-% 
-% %% Fossil Fuel
-% load('fossil_fuel_current_run.mat','fossil_fuel_current_run')
-% 
-% z = 25;
-% figure(Name='Fossil Fuel Use');
-% plot(y2(1:z), fossil_fuel_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Energy (TWh)', 'FontSize', 11);
-% title('Fossil Fuel Use (new production function)');
-% xlim([2025 2225])
-% 
-% %% Oil
-% load('oil_current_run.mat','oil_current_run')
-% 
-% z = 25;
-% figure(Name = 'Oil Use');
-% plot(y2(1:z), oil_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Energy (TWh)', 'FontSize', 11);
-% title('Oil Use (new production function)');
-% xlim([2025 2225])
-% 
-% %% Fraction of oil left extracted
-% load('ex_rates_current_run.mat','ex_rates_current_run')
-% 
-% z = 25;
-% figure;
-% plot(y2(1:z), ex_rates_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Rate', 'FontSize', 11);
-% title('Extraction rates of oil (new production function)');
-% xlim([2025 2225])
-% 
-% %% Coal
-% load('coal_current_run.mat','coal_current_run')
-% 
-% z = 25;
-% figure(Name ='Coal Use');
-% plot(y2(1:z), coal_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Energy (TWh)', 'FontSize', 11);
-% title('Coal Use (new production function)');
-% xlim([2025 2225])
-% 
-% %% Low Carbon Energy
-% load('E3_current_run.mat','E3_current_run')
-% 
-% z = 25;
-% figure(Name = 'Wind');
-% plot(y2(1:z), E3_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Energy (TWh)', 'FontSize', 11);
-% title('Low Carbon Energy Use (new production function)');
-% xlim([2025 2225])
-% 
-% %% Mineral Use
-% load('mineral_current_run', 'mineral_current_run')
-% 
-% z = 25;
-% figure(Name ='Mineral Use');
-% plot(y2(1:z), mineral_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Minerals (MtCu)', 'FontSize', 11);
-% title('Mineral Use (new production function)');
-% xlim([2025 2225])
-% 
-% %% Mineral Stock
-% load('mineral_stock_current_run', 'mineral_stock_current_run')
-% 
-% z = 25;
-% figure(Name ='Mineral Stock');
-% plot(y2(1:z), mineral_stock_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Minerals (MtCu)', 'FontSize', 11);
-% title('Mineral Stock (new production function)');
-% 
-% %% Green Capital
-% load('Gt1_current_run', 'Gt1_current_run')
-% 
-% z = 25;
-% figure(Name ='Green Capital Stock');
-% plot(y2(1:z), Gt1_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Green Capital Stock (MtCu)', 'FontSize', 11);
-% title('Green Capital Stock (new production function)');
-% xlim([2025 2225])
-% 
-% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % %%%  Climate Impact        %%%
-% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% %% Emissions
-% load('carbon_current_run', 'carbon_current_run')
-% 
-% z = 25;
-% figure(Name='Carbon Emissions');
-% plot(y2(1:z), carbon_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Emissions (GtC)', 'FontSize', 11);
-% title('Emissions (new production function)');
-% xlim([2025 2225])
-% 
-% %% Temperature
-% load('temp_current_run', 'temp_current_run')
-% 
-% figure(Name='Temperature Increase');
-% plot(y2(1:T), temp_current_run, ' -r', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Temperature Increase (degrees C)', 'FontSize', 11);
-% title('Temperature Increase (new production function)');
-% xlim([2025 2225])
-% 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %%%  Labour shares         %%%
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% %% Labour share to green capital
-% load('N3_current_run', 'N3_current_run')
-% 
-% z = 25;
-% figure(Name='Labour Share Green Capital');
-% plot(y2(1:z), N3_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Share', 'FontSize', 11);
-% title('Labour Share to Green Capital Production (newpf)');
-% xlim([2025 2225])
-% 
-% %% Labour share to coal
-% load('N2_current_run', 'N2_current_run')
-% 
-% z = 25;
-% figure(Name='Labour Share Coal');
-% plot(y2(1:z), N2_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Share', 'FontSize', 11);
-% title('Labour Share to Coal Production (newpf)');
-% xlim([2025 2225])
-% 
-% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% % %%%  GDP Growth Over Time  %%%
-% % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% %% Output in TWh
-% load('Yt_current_run','Yt_current_run')
-% 
-% z = 25;
-% figure(Name='Output');
-% plot(y2(1:z), Yt_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('Output (TWh)', 'FontSize', 11);
-% title('Output (new production function)');
-% xlim([2025 2225])
-% 
-% %% Output in $
-% load('gdp_current_run','gdp_current_run')
-% 
-% z = 25;
-% figure(Name='GDP');
-% plot(y2(1:z), gdp_current_run(1:z), ' -b', 'LineWidth', 1.5);
-% xlabel('Year', 'FontSize', 11);
-% ylabel('GDP ($)', 'FontSize', 11);
-% title('GDP (new production function)');
-% xlim([2025 2225])
+
+%% Output in TWh
+load('Yt_current_run','Yt_current_run')
+
+z = 25;
+figure(Name='Output');
+plot(y2(1:z), Yt_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('Output (TWh)', 'FontSize', 11);
+title('Output (new production function)');
+xlim([2025 2225])
+
+%% Output in $
+load('gdp_current_run','gdp_current_run')
+
+z = 25;
+figure(Name='GDP');
+plot(y2(1:z), gdp_current_run(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('GDP ($)', 'FontSize', 11);
+title('GDP (new production function)');
+xlim([2025 2225])
 
 %----------------------------------------------------------------------
 
@@ -2413,257 +2484,257 @@ end
 
 %----------------------------------------------------------------------
 
-% %%%%//////////      FIGURES PART 1: THESIS RESULTS      \\\\\\\\\\\\%%%
-terrared = [0.55 0.27 0.07];   % dark terra-like red (coal)
-paleorange = [0.95 0.65 0.2];  % pale orange/yellow (oil)
-greenlc = [0.2 0.7 0.3];       % green (low-carbon)
-
-
-%% FIGURE 2A: Coal production: Optimal versus LF
-load('coal_baseline.mat','coal_baseline');
-load('coal_nestedcd_lf.mat','coal_nestedcd_lf');
-z=30;
-figure;
-hold on;
-plot(y2(1:z),coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
-plot(y2(1:z),coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
-hold off;
-ylabel('Energy (x1000 TWh)');
-title('Figure 2a: Coal production');
-legend({'Baseline', 'Laissez-faire'}, 'Location', 'northwest');
-grid off;
-xlim([2025 2250])
-
-
-%% FIGURE 2B: Emissions Coal
-load('coal_ghkt_v1.mat','coal_ghkt_v1');
-load('emiss_coal_baseline.mat','emiss_coal_baseline');
-load('emiss_coal_nestedcd_lf.mat','emiss_coal_nestedcd_lf');
-z=30;
-figure;
-hold on;
-plot(y2(1:z),emiss_coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
-plot(y2(1:z),emiss_coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
-%plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
-ylabel('Emissions (GtC)');
-title('Figure 2b: Coal emissions');
-legend({'Baseline', 'Laissez-faire','GHKT'}, 'Location', 'best');
-xlim([2025 2250])
-
-%% FIGURE 4: Temperature
-load('temp_ghkt_v1.mat','temp_ghkt_v1')
-load('temp_baseline.mat','temp_baseline');
-load('temp_nestedcd_lf.mat', 'temp_nestedcd_lf')
-
-z = 30;
-figure;
-hold on; 
-plot(y2(1:z), temp_ghkt_v1(1:z),'-.','Color', [0.75 0.3 0.2],'Linewidth', 1.5);
-plot(y2(1:z), temp_baseline(1:z),'-','Color', [0.75 0.2 0.2],'Linewidth', 1.5);
-plot(y2(1:z), temp_nestedcd_lf(1:z),':','Color', [0.75 0.4 0.2],'Linewidth', 1.5);
-hold off;
-ylabel('{\circ}C');
-title('Figure 4: Temperature');
-legend({'GHKT','Baseline','Laissez-faire'}, 'Location', 'best');
-xlim([2025 2250]);
-
-%% FIGURE 5A & 5B: Low carbon energy production
-load('E3_baseline.mat','E3_baseline');
-load('E3_nestedcd_lf.mat', 'E3_nestedcd_lf')
-load('E3_dK.mat','E3_dK')
-load('E3_dG.mat','E3_dG')
-load('E3_dG_dK.mat','E3_dG_dK')
-load('E3_dkdg_500.mat','E3_dkdg_500')
-load('E3_dkdg_1000.mat','E3_dkdg_1000')
-load('E3_enK.mat','E3_enK')
-load('E3_effE.mat','E3_effE')
-load('E3_enK_effE.mat', 'E3_enK_effE')
-load('E3_enK_effE_dkdg.mat', 'E3_enK_effE_dkdg')
-load('E3_enKy_effE_dkdg.mat', 'E3_enKy_effE_dkdg')
-
-z = 30;
-figure;
-hold on; 
-plot(y2(1:z), E3_baseline(1:z),'-','Color', [0.1 0.35 0.15],'Linewidth', 1.5);
-plot(y2(1:z), E3_dK(1:z),'--','Color', [0.4 0.8 0.5],'Linewidth', 1.5);
-plot(y2(1:z), E3_dG(1:z),':','Color', [0.3 0.9 0.7],'Linewidth', 1.5);
-plot(y2(1:z), E3_dG_dK(1:z),'-.','Color', [0.2 0.7 0.3],'Linewidth', 1.5);
-% plot(y2(1:z), E3_dkdg_500(1:z),'--','Color', [0.3 0.8 0.6],'Linewidth', 1.5);
-% plot(y2(1:z), E3_dkdg_1000(1:z),':','Color', [0.4 0.7 0.4],'Linewidth', 1.5);
-% plot(y2(1:z), E3_enK(1:z),'-.','Color', [0.1 0.5 0.4],'Linewidth', 1.5);
-% plot(y2(1:z), E3_effE(1:z),':','Color', 'green','Linewidth', 1.5);
-% plot(y2(1:z), E3_enK_effE(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-% plot(y2(1:z), E3_enK_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-% plot(y2(1:z), E3_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-hold off;
-ylabel('Energy (x1000 TWh)');
-title('Figure 5a&b: Fossil Fuel Use');
-legend({'Baseline','S1: \delta\kappa_M = 0.002','S2: \delta_G = 0.1', 'S3: \delta\kappa_M = 0.002, \delta_G = 0.1'}, 'Location', 'best');
-xlim([2025 2250]);
-
-%% FIGURE 7A: Fossil fuel usage
-load('fossil_fuel_baseline.mat','fossil_fuel_baseline');
-load('fossil_fuel_nestedcd_lf.mat', 'fossil_fuel_nestedcd_lf')
-load('fossil_fuel_dG_dK.mat','fossil_fuel_dG_dK')
-load('fossil_fuel_enK.mat','fossil_fuel_enK')
-load('fossil_fuel_effE.mat','fossil_fuel_effE')
-load('fossil_fuel_enK_effE.mat','fossil_fuel_enK_effE')
-load('fossil_fuel_enK_effE_dkdg.mat','fossil_fuel_enK_effE_dkdg')
-load('fossil_fuel_enKy_effE_dkdg.mat','fossil_fuel_enKy_effE_dkdg')
-z = 30;
-figure;
-hold on; 
-plot(y2(1:z), fossil_fuel_baseline(1:z),'-','Color', [0.2 0.1 0.1],'Linewidth', 1.5);
-%plot(y2(1:z), fossil_fuel_dK(1:z),'--','Color', [0.4 0.8 0.5],'Linewidth', 1.5);
-%plot(y2(1:z), fossil_fuel_dG(1:z),':','Color', [0.3 0.9 0.7],'Linewidth', 1.5);
-%plot(y2(1:z), fossil_fuel_dG_dK(1:z),'-.','Color', [0.2 0.7 0.3],'Linewidth', 1.5);
-plot(y2(1:z), fossil_fuel_effE(1:z),':','Color', [0.5 0.4 0.4],'Linewidth', 1.5);
-plot(y2(1:z), fossil_fuel_enK(1:z),'-.','Color', [0.3 0.2 0.2],'Linewidth', 1.5);
-%plot(y2(1:z), fossil_fuel_enK_effE(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-%plot(y2(1:z), fossil_fuel_enK_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-%plot(y2(1:z), fossil_fuel_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-hold off;
-xlabel('Year');
-ylabel('Energy (x1000 TWh)');
-title('Figure 7a: Fossil Fuel Use');
-legend({'Baseline','S5: \deltae_x = 0.02','S6: \deltaE_K = 0.02'},'Location', 'northwest');
-xlim([2025 2250]);
-
-%% FIRUGE 7B: Temperature change
-load('temp_baseline.mat','temp_baseline');
-load('temp_enK_effE.mat','temp_enK_effE')
-load('temp_enKy_effE_dkdg.mat','temp_enKy_effE_dkdg')
-
-z = 30;
-figure;
-hold on; 
-plot(y2(1:z), temp_baseline(1:z),'-','Color', [0.75 0.2 0.2],'Linewidth', 1.5);
-plot(y2(1:z), temp_enK_effE(1:z),':','Color',[0.8 0.7 0.3],'Linewidth', 1.5);
-plot(y2(1:z), temp_enKy_effE_dkdg(1:z),'-.','Color',[0.7 0.2 0.2],'Linewidth', 1.5);
-hold off;
-xlabel('Year');
-ylabel('{\circ}C');
-title('Figure 7b: Temperature');
-legend({'Baseline','\deltaE_K = 0.02/decade','\deltaE_K = 0.01/year'}, 'Location', 'northwest');
-xlim([2025 2250]);
-
-%% FIGURE 8: Net output
-load('gdp_baseline.mat', 'gdp_baseline')
-load('gdp_nestedcd_lf.mat', 'gdp_nestedcd_lf')
-load('gdp_effE.mat', 'gdp_effE')
-load('gdp_enK.mat', 'gdp_enK')
-load('gdp_enK_effE.mat','gdp_enK_effE')
-load('gdp_enK_effE_dkdg.mat','gdp_enK_effE_dkdg')
-load('gdp_enKy_effE_dkdg.mat','gdp_enKy_effE_dkdg')
-
-net_gdp_baseline = zeros(T,1);
-net_gdp_effE = zeros(T,1);
-net_gdp_enK = zeros(T,1);
-net_gdp_enK_effE = zeros(T,1);
-net_gdp_enK_effE_dkdg = zeros(T,1);
-for i = 1:1:T;
-   net_gdp_baseline(i) = gdp_baseline(i)/gdp_nestedcd_lf(i);
-   net_gdp_effE(i) = gdp_effE(i)/gdp_baseline(i);
-   net_gdp_enK(i) = gdp_enK(i)/gdp_baseline(i);
-   net_gdp_enK_effE(i) = gdp_enK_effE(i)/gdp_baseline(i);
-   net_gdp_enK_effE_dkdg(i) = gdp_enK_effE_dkdg(i)/gdp_baseline(i);
-   net_gdp_enKy_effE_dkdg(i) = gdp_enK_effE_dkdg(i)/gdp_baseline(i);
-end 
-
-z = 25; 
-figure; 
-hold on;
-%plot(y2(1:z), net_gdp_baseline(1:z),": ", 'LineWidth', 1.5);
-plot(y2(1:z), net_gdp_effE(1:z),": ", 'LineWidth', 1.5);
-plot(y2(1:z), net_gdp_enK(1:z),": ", 'LineWidth', 1.5);
-plot(y2(1:z),  net_gdp_enK_effE(1:z),": ", 'LineWidth', 1.5);
-plot(y2(1:z),  net_gdp_enK_effE_dkdg(1:z),": ", 'LineWidth', 1.5);
-%plot(y2(1:z),  net_gdp_enKy_effE_dkdg(1:z),": ", 'LineWidth', 1.5);
-hold off;
-title('Figure 8&9: Net output');
-xlim([2025 2250])
-ylim([0.99 1.25])
-legend({'S5: \deltae_x = 0.02','S6: \deltaE_K = 0.02','S7: \deltae_x = 0.02, \deltaE_K = 0.02','S8: \deltae_x = 0.02, \deltaE_K = 0.02, \delta_\kappa_M = 0.002, \delta_G = 0.02'},'Location', 'northwest');
-
-%----------------------------------------------------------------------
-
-%%%%%%%%%%%%%%%%%%    Appendix Figures       %%%%%%%%%%%%%%%%%%%%
-
-%%FIGURE A1: Coal emission coefficient
-load('ypsilon_ghkt','ypsilon_ghkt');
-z = 30;
-figure;
-plot(y2(1:z),ypsilon_ghkt(1:z),'-o')
-xlabel('Year','FontSize',11)
-ylabel('Coal Emissions Coefficient','FontSize',11)
-title('Figure A.1: Coal emission coefficient');
-grid off;
-xlim([2025 2300]);
-
-
-%%FIGURE A2: OIL PRODUCTION: OPTIMAL VS LF 
-load('oil_baseline.mat','oil_baseline');
-load('oil_nestedcd_lf.mat','oil_nestedcd_lf');
-z=30;
-figure;
-hold on;
-plot(y2(1:z),oil_baseline(1:z),"-",'Color', paleorange, 'LineWidth', 1.5);
-plot(y2(1:z),oil_nestedcd_lf(1:z),"--",'Color', paleorange, 'LineWidth', 1.5);
-ylabel('Energy (x1000 TWh)');
-title('Figure A.2: Oil production');
-legend({'Baseline', 'Laissez-faire'}, 'Location', 'best');
-xlim([2025 2285])
-ylim([82 83])
-
-%%Figure A3:
-load('coal_ghkt_v1.mat','coal_ghkt_v1');
-load('emiss_coal_baseline.mat','emiss_coal_baseline');
-load('emiss_coal_nestedcd_lf.mat','emiss_coal_nestedcd_lf');
-z=30;
-figure;
-hold on;
-plot(y2(1:z),emiss_coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
-plot(y2(1:z),emiss_coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
-plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
-ylabel('Emissions (GtC)');
-title('Figure A.3: Emissions from coal');
-legend({'Baseline', 'Laissez-faire','GHKT'}, 'Location', 'best');
-xlim([2025 2250])
-
-%%Figure A4: 
-
-%%Figure A5: 
-%%%%%%%%%%%% ///// ENERGY USE all scenarios \\\\\ %%%%%%%%%%%%%%%%%%%%%
-load('energy_baseline.mat','energy_baseline');
-load('energy_dK.mat','energy_dK')
-load('energy_dG.mat','energy_dG')
-load('energy_dG_dK.mat','energy_dG_dK')
-load('energy_enK.mat', 'energy_enK')
-load('energy_dkdg_1000.mat', 'energy_dkdg_1000')
-load('energy_dkdg_500.mat','energy_dkdg_500')
-load('energy_effE.mat', 'energy_effE')
-load('energy_enK_effE.mat', 'energy_enK_effE')
-load('energy_enK_effE_dkdg.mat', 'energy_enK_effE_dkdg')
-load('energy_enKy_effE_dkdg.mat', 'energy_enKy_effE_dkdg')
-z = 30;
-figure;
-hold on; 
-plot(y2(1:z), energy_baseline(1:z),'-','Color',[0.9 0.5 0.3],'Linewidth', 1.5);
-% plot(y2(1:z), energy_dK(1:z),'--','Color',[0.7 0.6 0.2],'Linewidth', 1.5);
-% plot(y2(1:z), energy_dG(1:z),':','Color',[0.6 0.7 0.3],'Linewidth', 1.5);
-plot(y2(1:z), energy_dG_dK(1:z),'-.','Color', [0.8 0.4 0.05],'Linewidth', 1.5);
-% plot(y2(1:z), energy_enK(1:z),'-.','Color', [0.7 0.6 0.2],'Linewidth', 1.5);
-% plot(y2(1:z), energy_effE(1:z),':','Color','red','Linewidth', 1.5);
-% plot(y2(1:z), energy_enK_effE(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-% plot(y2(1:z), energy_enK_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-% plot(y2(1:z), energy_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
-plot(y2(1:z), energy_dkdg_1000(1:z),'--','Color',[0.7 0.6 0.2],'Linewidth', 1.5);
-plot(y2(1:z), energy_dkdg_500(1:z),':','Color',[0.8 0.6 0.07],'Linewidth', 1.5);
-hold off;
-ylabel('Energy (x1000 TWh)');
-title('Figure A.5: Energy production');
-legend({'Baseline','\delta\kappa_M = 0.002, \delta_G = 0.1, M_0 = 2000','\delta\kappa_M = 0.002, \delta_G = 0.1, M_0 = 1000','\delta\kappa_M = 0.002, \delta_G = 0.1, M_0 = 500'}, 'Location', 'best');
-xlim([2025 2250]);
+% % %%%%//////////      FIGURES PART 1: THESIS RESULTS      \\\\\\\\\\\\%%%
+% terrared = [0.55 0.27 0.07];   % dark terra-like red (coal)
+% paleorange = [0.95 0.65 0.2];  % pale orange/yellow (oil)
+% greenlc = [0.2 0.7 0.3];       % green (low-carbon)
+% 
+% 
+% %% FIGURE 2A: Coal production: Optimal versus LF
+% load('coal_baseline.mat','coal_baseline');
+% load('coal_nestedcd_lf.mat','coal_nestedcd_lf');
+% z=30;
+% figure;
+% hold on;
+% plot(y2(1:z),coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
+% plot(y2(1:z),coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
+% hold off;
+% ylabel('Energy (x1000 TWh)');
+% title('Figure 2a: Coal production');
+% legend({'Baseline', 'Laissez-faire'}, 'Location', 'northwest');
+% grid off;
+% xlim([2025 2250])
+% 
+% 
+% %% FIGURE 2B: Emissions Coal
+% load('coal_ghkt_v1.mat','coal_ghkt_v1');
+% load('emiss_coal_baseline.mat','emiss_coal_baseline');
+% load('emiss_coal_nestedcd_lf.mat','emiss_coal_nestedcd_lf');
+% z=30;
+% figure;
+% hold on;
+% plot(y2(1:z),emiss_coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
+% plot(y2(1:z),emiss_coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
+% %plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
+% ylabel('Emissions (GtC)');
+% title('Figure 2b: Coal emissions');
+% legend({'Baseline', 'Laissez-faire','GHKT'}, 'Location', 'best');
+% xlim([2025 2250])
+% 
+% %% FIGURE 4: Temperature
+% load('temp_ghkt_v1.mat','temp_ghkt_v1')
+% load('temp_baseline.mat','temp_baseline');
+% load('temp_nestedcd_lf.mat', 'temp_nestedcd_lf')
+% 
+% z = 30;
+% figure;
+% hold on; 
+% plot(y2(1:z), temp_ghkt_v1(1:z),'-.','Color', [0.75 0.3 0.2],'Linewidth', 1.5);
+% plot(y2(1:z), temp_baseline(1:z),'-','Color', [0.75 0.2 0.2],'Linewidth', 1.5);
+% plot(y2(1:z), temp_nestedcd_lf(1:z),':','Color', [0.75 0.4 0.2],'Linewidth', 1.5);
+% hold off;
+% ylabel('{\circ}C');
+% title('Figure 4: Temperature');
+% legend({'GHKT','Baseline','Laissez-faire'}, 'Location', 'best');
+% xlim([2025 2250]);
+% 
+% %% FIGURE 5A & 5B: Low carbon energy production
+% load('E3_baseline.mat','E3_baseline');
+% load('E3_nestedcd_lf.mat', 'E3_nestedcd_lf')
+% load('E3_dK.mat','E3_dK')
+% load('E3_dG.mat','E3_dG')
+% load('E3_dG_dK.mat','E3_dG_dK')
+% load('E3_dkdg_500.mat','E3_dkdg_500')
+% load('E3_dkdg_1000.mat','E3_dkdg_1000')
+% load('E3_enK.mat','E3_enK')
+% load('E3_effE.mat','E3_effE')
+% load('E3_enK_effE.mat', 'E3_enK_effE')
+% load('E3_enK_effE_dkdg.mat', 'E3_enK_effE_dkdg')
+% load('E3_enKy_effE_dkdg.mat', 'E3_enKy_effE_dkdg')
+% 
+% z = 30;
+% figure;
+% hold on; 
+% plot(y2(1:z), E3_baseline(1:z),'-','Color', [0.1 0.35 0.15],'Linewidth', 1.5);
+% plot(y2(1:z), E3_dK(1:z),'--','Color', [0.4 0.8 0.5],'Linewidth', 1.5);
+% plot(y2(1:z), E3_dG(1:z),':','Color', [0.3 0.9 0.7],'Linewidth', 1.5);
+% plot(y2(1:z), E3_dG_dK(1:z),'-.','Color', [0.2 0.7 0.3],'Linewidth', 1.5);
+% % plot(y2(1:z), E3_dkdg_500(1:z),'--','Color', [0.3 0.8 0.6],'Linewidth', 1.5);
+% % plot(y2(1:z), E3_dkdg_1000(1:z),':','Color', [0.4 0.7 0.4],'Linewidth', 1.5);
+% % plot(y2(1:z), E3_enK(1:z),'-.','Color', [0.1 0.5 0.4],'Linewidth', 1.5);
+% % plot(y2(1:z), E3_effE(1:z),':','Color', 'green','Linewidth', 1.5);
+% % plot(y2(1:z), E3_enK_effE(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% % plot(y2(1:z), E3_enK_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% % plot(y2(1:z), E3_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% hold off;
+% ylabel('Energy (x1000 TWh)');
+% title('Figure 5a&b: Fossil Fuel Use');
+% legend({'Baseline','S1: \delta\kappa_M = 0.002','S2: \delta_G = 0.1', 'S3: \delta\kappa_M = 0.002, \delta_G = 0.1'}, 'Location', 'best');
+% xlim([2025 2250]);
+% 
+% %% FIGURE 7A: Fossil fuel usage
+% load('fossil_fuel_baseline.mat','fossil_fuel_baseline');
+% load('fossil_fuel_nestedcd_lf.mat', 'fossil_fuel_nestedcd_lf')
+% load('fossil_fuel_dG_dK.mat','fossil_fuel_dG_dK')
+% load('fossil_fuel_enK.mat','fossil_fuel_enK')
+% load('fossil_fuel_effE.mat','fossil_fuel_effE')
+% load('fossil_fuel_enK_effE.mat','fossil_fuel_enK_effE')
+% load('fossil_fuel_enK_effE_dkdg.mat','fossil_fuel_enK_effE_dkdg')
+% load('fossil_fuel_enKy_effE_dkdg.mat','fossil_fuel_enKy_effE_dkdg')
+% z = 30;
+% figure;
+% hold on; 
+% plot(y2(1:z), fossil_fuel_baseline(1:z),'-','Color', [0.2 0.1 0.1],'Linewidth', 1.5);
+% %plot(y2(1:z), fossil_fuel_dK(1:z),'--','Color', [0.4 0.8 0.5],'Linewidth', 1.5);
+% %plot(y2(1:z), fossil_fuel_dG(1:z),':','Color', [0.3 0.9 0.7],'Linewidth', 1.5);
+% %plot(y2(1:z), fossil_fuel_dG_dK(1:z),'-.','Color', [0.2 0.7 0.3],'Linewidth', 1.5);
+% plot(y2(1:z), fossil_fuel_effE(1:z),':','Color', [0.5 0.4 0.4],'Linewidth', 1.5);
+% plot(y2(1:z), fossil_fuel_enK(1:z),'-.','Color', [0.3 0.2 0.2],'Linewidth', 1.5);
+% %plot(y2(1:z), fossil_fuel_enK_effE(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% %plot(y2(1:z), fossil_fuel_enK_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% %plot(y2(1:z), fossil_fuel_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% hold off;
+% xlabel('Year');
+% ylabel('Energy (x1000 TWh)');
+% title('Figure 7a: Fossil Fuel Use');
+% legend({'Baseline','S5: \deltae_x = 0.02','S6: \deltaE_K = 0.02'},'Location', 'northwest');
+% xlim([2025 2250]);
+% 
+% %% FIRUGE 7B: Temperature change
+% load('temp_baseline.mat','temp_baseline');
+% load('temp_enK_effE.mat','temp_enK_effE')
+% load('temp_enKy_effE_dkdg.mat','temp_enKy_effE_dkdg')
+% 
+% z = 30;
+% figure;
+% hold on; 
+% plot(y2(1:z), temp_baseline(1:z),'-','Color', [0.75 0.2 0.2],'Linewidth', 1.5);
+% plot(y2(1:z), temp_enK_effE(1:z),':','Color',[0.8 0.7 0.3],'Linewidth', 1.5);
+% plot(y2(1:z), temp_enKy_effE_dkdg(1:z),'-.','Color',[0.7 0.2 0.2],'Linewidth', 1.5);
+% hold off;
+% xlabel('Year');
+% ylabel('{\circ}C');
+% title('Figure 7b: Temperature');
+% legend({'Baseline','\deltaE_K = 0.02/decade','\deltaE_K = 0.01/year'}, 'Location', 'northwest');
+% xlim([2025 2250]);
+% 
+% %% FIGURE 8: Net output
+% load('gdp_baseline.mat', 'gdp_baseline')
+% load('gdp_nestedcd_lf.mat', 'gdp_nestedcd_lf')
+% load('gdp_effE.mat', 'gdp_effE')
+% load('gdp_enK.mat', 'gdp_enK')
+% load('gdp_enK_effE.mat','gdp_enK_effE')
+% load('gdp_enK_effE_dkdg.mat','gdp_enK_effE_dkdg')
+% load('gdp_enKy_effE_dkdg.mat','gdp_enKy_effE_dkdg')
+% 
+% net_gdp_baseline = zeros(T,1);
+% net_gdp_effE = zeros(T,1);
+% net_gdp_enK = zeros(T,1);
+% net_gdp_enK_effE = zeros(T,1);
+% net_gdp_enK_effE_dkdg = zeros(T,1);
+% for i = 1:1:T;
+%    net_gdp_baseline(i) = gdp_baseline(i)/gdp_nestedcd_lf(i);
+%    net_gdp_effE(i) = gdp_effE(i)/gdp_baseline(i);
+%    net_gdp_enK(i) = gdp_enK(i)/gdp_baseline(i);
+%    net_gdp_enK_effE(i) = gdp_enK_effE(i)/gdp_baseline(i);
+%    net_gdp_enK_effE_dkdg(i) = gdp_enK_effE_dkdg(i)/gdp_baseline(i);
+%    net_gdp_enKy_effE_dkdg(i) = gdp_enK_effE_dkdg(i)/gdp_baseline(i);
+% end 
+% 
+% z = 25; 
+% figure; 
+% hold on;
+% %plot(y2(1:z), net_gdp_baseline(1:z),": ", 'LineWidth', 1.5);
+% plot(y2(1:z), net_gdp_effE(1:z),": ", 'LineWidth', 1.5);
+% plot(y2(1:z), net_gdp_enK(1:z),": ", 'LineWidth', 1.5);
+% plot(y2(1:z),  net_gdp_enK_effE(1:z),": ", 'LineWidth', 1.5);
+% plot(y2(1:z),  net_gdp_enK_effE_dkdg(1:z),": ", 'LineWidth', 1.5);
+% %plot(y2(1:z),  net_gdp_enKy_effE_dkdg(1:z),": ", 'LineWidth', 1.5);
+% hold off;
+% title('Figure 8&9: Net output');
+% xlim([2025 2250])
+% ylim([0.99 1.25])
+% legend({'S5: \deltae_x = 0.02','S6: \deltaE_K = 0.02','S7: \deltae_x = 0.02, \deltaE_K = 0.02','S8: \deltae_x = 0.02, \deltaE_K = 0.02, \delta_\kappa_M = 0.002, \delta_G = 0.02'},'Location', 'northwest');
+% 
+% %----------------------------------------------------------------------
+% 
+% %%%%%%%%%%%%%%%%%%    Appendix Figures       %%%%%%%%%%%%%%%%%%%%
+% 
+% %%FIGURE A1: Coal emission coefficient
+% load('ypsilon_ghkt','ypsilon_ghkt');
+% z = 30;
+% figure;
+% plot(y2(1:z),ypsilon_ghkt(1:z),'-o')
+% xlabel('Year','FontSize',11)
+% ylabel('Coal Emissions Coefficient','FontSize',11)
+% title('Figure A.1: Coal emission coefficient');
+% grid off;
+% xlim([2025 2300]);
+% 
+% 
+% %%FIGURE A2: OIL PRODUCTION: OPTIMAL VS LF 
+% load('oil_baseline.mat','oil_baseline');
+% load('oil_nestedcd_lf.mat','oil_nestedcd_lf');
+% z=30;
+% figure;
+% hold on;
+% plot(y2(1:z),oil_baseline(1:z),"-",'Color', paleorange, 'LineWidth', 1.5);
+% plot(y2(1:z),oil_nestedcd_lf(1:z),"--",'Color', paleorange, 'LineWidth', 1.5);
+% ylabel('Energy (x1000 TWh)');
+% title('Figure A.2: Oil production');
+% legend({'Baseline', 'Laissez-faire'}, 'Location', 'best');
+% xlim([2025 2285])
+% ylim([82 83])
+% 
+% %%Figure A3:
+% load('coal_ghkt_v1.mat','coal_ghkt_v1');
+% load('emiss_coal_baseline.mat','emiss_coal_baseline');
+% load('emiss_coal_nestedcd_lf.mat','emiss_coal_nestedcd_lf');
+% z=30;
+% figure;
+% hold on;
+% plot(y2(1:z),emiss_coal_baseline(1:z),"-",'Color', terrared, 'LineWidth', 1.5);
+% plot(y2(1:z),emiss_coal_nestedcd_lf(1:z),"--",'Color', terrared, 'LineWidth', 1.5);
+% plot(y2(1:z),coal_ghkt_v1(1:z),":",'Color', terrared, 'LineWidth', 1.5);
+% ylabel('Emissions (GtC)');
+% title('Figure A.3: Emissions from coal');
+% legend({'Baseline', 'Laissez-faire','GHKT'}, 'Location', 'best');
+% xlim([2025 2250])
+% 
+% %%Figure A4: 
+% 
+% %%Figure A5: 
+% %%%%%%%%%%%% ///// ENERGY USE all scenarios \\\\\ %%%%%%%%%%%%%%%%%%%%%
+% load('energy_baseline.mat','energy_baseline');
+% load('energy_dK.mat','energy_dK')
+% load('energy_dG.mat','energy_dG')
+% load('energy_dG_dK.mat','energy_dG_dK')
+% load('energy_enK.mat', 'energy_enK')
+% load('energy_dkdg_1000.mat', 'energy_dkdg_1000')
+% load('energy_dkdg_500.mat','energy_dkdg_500')
+% load('energy_effE.mat', 'energy_effE')
+% load('energy_enK_effE.mat', 'energy_enK_effE')
+% load('energy_enK_effE_dkdg.mat', 'energy_enK_effE_dkdg')
+% load('energy_enKy_effE_dkdg.mat', 'energy_enKy_effE_dkdg')
+% z = 30;
+% figure;
+% hold on; 
+% plot(y2(1:z), energy_baseline(1:z),'-','Color',[0.9 0.5 0.3],'Linewidth', 1.5);
+% % plot(y2(1:z), energy_dK(1:z),'--','Color',[0.7 0.6 0.2],'Linewidth', 1.5);
+% % plot(y2(1:z), energy_dG(1:z),':','Color',[0.6 0.7 0.3],'Linewidth', 1.5);
+% plot(y2(1:z), energy_dG_dK(1:z),'-.','Color', [0.8 0.4 0.05],'Linewidth', 1.5);
+% % plot(y2(1:z), energy_enK(1:z),'-.','Color', [0.7 0.6 0.2],'Linewidth', 1.5);
+% % plot(y2(1:z), energy_effE(1:z),':','Color','red','Linewidth', 1.5);
+% % plot(y2(1:z), energy_enK_effE(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% % plot(y2(1:z), energy_enK_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% % plot(y2(1:z), energy_enKy_effE_dkdg(1:z),':','Color',[0.4 0.8 0.5],'Linewidth', 1.5);
+% plot(y2(1:z), energy_dkdg_1000(1:z),'--','Color',[0.7 0.6 0.2],'Linewidth', 1.5);
+% plot(y2(1:z), energy_dkdg_500(1:z),':','Color',[0.8 0.6 0.07],'Linewidth', 1.5);
+% hold off;
+% ylabel('Energy (x1000 TWh)');
+% title('Figure A.5: Energy production');
+% legend({'Baseline','\delta\kappa_M = 0.002, \delta_G = 0.1, M_0 = 2000','\delta\kappa_M = 0.002, \delta_G = 0.1, M_0 = 1000','\delta\kappa_M = 0.002, \delta_G = 0.1, M_0 = 500'}, 'Location', 'best');
+% xlim([2025 2250]);
 % 
 
 %----------------------------------------------------------------------
@@ -2718,38 +2789,40 @@ xlim([2025 2250]);
 % xlim([2025 2225]);
 % ylim([60.5 60.7]);
 
-%%%// GDP: all scenarios 
-% %----------- absolute
-% load('Yt_ghkt_v1.mat','Yt_ghkt_v1');
-% load('gdp_baseline.mat','gdp_baseline');
-% load('gdp_nestedcd_lf.mat','gdp_nestedcd_lf');
-% load('gdp_dK.mat','gdp_dK');
-% load('gdp_dG.mat','gdp_dG');
-% load('gdp_dG_dK.mat','gdp_dG_dK');
-% load('gdp_enK.mat', 'gdp_enK');
-% load('gdp_effE.mat', 'gdp_effE');
-% load('gdp_enK_effE.mat', 'gdp_enK_effE');
-% load('gdp_enK_effE_dkdg.mat', 'gdp_enK_effE_dkdg');
-% load('gdp_enKy_effE_dkdg.mat', 'gdp_enKy_effE_dkdg');
-% z = 30; 
-% figure; hold on;
-% plot(y2(1:z), gdp_baseline(1:z),"-", 'LineWidth', 1.5);
-% %plot(y2(1:z), gdp_nestedcd_lf(1:z),"--",'LineWidth',1.5);
-% %plot(y2(1:z), Yt_ghkt_v1(1:z),": ", 'LineWidth', 1.5);
-% %plot(y2(1:z), gdp_dG_dK(1:z),": ", 'LineWidth', 1.5);
-% %plot(y2(1:z), gdp_dK(1:z),": ", 'LineWidth', 1.5);
-% %plot(y2(1:z), gdp_dG(1:z),": ", 'LineWidth', 1.5);
+%%// GDP: all scenarios 
+%----------- absolute
+load('Yt_ghkt_v1.mat','Yt_ghkt_v1');
+load('gdp_baseline.mat','gdp_baseline');
+load('gdp_nestedcd_lf.mat','gdp_nestedcd_lf');
+load('gdp_dK.mat','gdp_dK');
+load('gdp_dG.mat','gdp_dG');
+load('gdp_dG_dK.mat','gdp_dG_dK');
+load('gdp_enK.mat', 'gdp_enK');
+load('gdp_effE.mat', 'gdp_effE');
+load('gdp_enK_effE.mat', 'gdp_enK_effE');
+load('gdp_enK_effE_dkdg.mat', 'gdp_enK_effE_dkdg');
+load('gdp_enKy_effE_dkdg.mat', 'gdp_enKy_effE_dkdg');
+z = 30; 
+figure; hold on;
+%plot(y2(1:z), gdp_baseline(1:z),"-", 'LineWidth', 1.5);
+%plot(y2(1:z), gdp_nestedcd_lf(1:z),"--",'LineWidth',1.5);
+plot(y2(1:z), Yt_ghkt_v1(1:z),": ", 'LineWidth', 1.5);
+%plot(y2(1:z), gdp_dG_dK(1:z),": ", 'LineWidth', 1.5);
+%plot(y2(1:z), gdp_dK(1:z),": ", 'LineWidth', 1.5);
+%plot(y2(1:z), gdp_dG(1:z),": ", 'LineWidth', 1.5);
+plot(y2(1:z), gdp_current_run(1:z),'-.','Linewidth', 1.5);
 % plot(y2(1:z), gdp_enK(1:z),'-.','Linewidth', 1.5);
 % plot(y2(1:z), gdp_effE(1:z),'-.','Linewidth', 1.5);
-% plot(y2(1:z), gdp_enK_effE(1:z),':','Linewidth', 1.5);
-% plot(y2(1:z), gdp_enK_effE_dkdg(1:z),':','Linewidth', 1.5);
+%plot(y2(1:z), gdp_enK_effE(1:z),':','Linewidth', 1.5);
+%plot(y2(1:z), gdp_enK_effE_dkdg(1:z),':','Linewidth', 1.5);
 % plot(y2(1:z), gdp_enKy_effE_dkdg(1:z),':','Linewidth', 1.5);
-% hold off;
-% xlabel('Year', 'FontSize', 11);
-% ylabel('GDP (billion $)', 'FontSize', 11);
-% title('GDP');
-% legend('Location', 'best');
-% xlim([2025 2300]);
+hold off;
+xlabel('Year', 'FontSize', 11);
+ylabel('GDP (billion $)', 'FontSize', 11);
+title('GDP');
+%legend({'baseline', 'GHKT','current run','growth EnK effE','growth EnK, effE, dkdg'},'Location', 'best');
+legend({'GHKT','current run'},'Location', 'best');
+xlim([2025 2290]);
 % ylim([400000 1100000]);
 
 %%%// EMISSIONS: all scenarios 
@@ -2914,58 +2987,58 @@ hold off;
 %      'GDP_betahigh_ypsilonhigh','temp_betahigh_ypsilonhigh','emiss_betahigh_ypsilonhigh','y2_betahigh_ypsilonhigh','label_betahigh_ypsilonhigh');
 
 %% === Load all scenario results ===
-load('sens_baseline.mat');
-load('sens_betahigh.mat');
-load('sens_ypsilonhigh.mat');
-load('sens_betahigh_ypsilonhigh.mat');
-
-%% === Sensitivity comparison (first 30 periods) ===
-z = 30;
-
-% Ensure column vectors
-GDP_baseline              = GDP_baseline(:);
-GDP_betahigh              = GDP_betahigh(:);
-GDP_ypsilonhigh           = GDP_ypsilonhigh(:);
-GDP_betahigh_ypsilonhigh  = GDP_betahigh_ypsilonhigh(:);
-
-temp_baseline             = temp_baseline(:);
-temp_betahigh             = temp_betahigh(:);
-temp_ypsilonhigh          = temp_ypsilonhigh(:);
-temp_betahigh_ypsilonhigh = temp_betahigh_ypsilonhigh(:);
-
-% Clamp to the shortest available length
-z = min([z, numel(GDP_baseline), numel(GDP_betahigh), ...
-            numel(GDP_ypsilonhigh), numel(GDP_betahigh_ypsilonhigh)]);
-
-t = (1:z);
-
-%% === GDP Comparison (tab 1) ===
-figure('Name','GDP Sensitivity (β, υ)','NumberTitle','off');
-hold on; grid off;
-
-% --- Baseline (dark blue, no markers)
-plot(t, GDP_baseline(1:z), '-', 'Color',[0 0.2 0.6], 'LineWidth', 1.2, ...
-     'DisplayName','Baseline');
-
-% --- υ high (red, X)
-plot(t, GDP_ypsilonhigh(1:z), '-.x', 'Color',[0.85 0 0], 'LineWidth', 1.0, ...
-     'MarkerSize',4, 'DisplayName','\beta = 0.985, \Upsilon = 1');
-
-
-% --- β high (gold, circle)
-plot(t, GDP_betahigh(1:z), '-o', 'Color',[0.9 0.7 0.1], 'LineWidth', 1.0, ...
-     'MarkerSize',4, 'DisplayName','\beta = 0.999');
-
-% --- β high + υ high (green, circle)
-plot(t, GDP_betahigh_ypsilonhigh(1:z), ':o', 'Color',[0 0.6 0], 'LineWidth', 1.0, ...
-     'MarkerSize',4, 'DisplayName','\beta = 0.999, \Upsilon = 1');
-
-xlabel('Period');
-ylabel('GDP (billion USD)');
-title('GDP Sensitivity to beta and ypsilon)');
-legend('Location','bestoutside');
-xlim([0 28])
-set(gca,'FontSize',11);
+% load('sens_baseline.mat');
+% load('sens_betahigh.mat');
+% load('sens_ypsilonhigh.mat');
+% load('sens_betahigh_ypsilonhigh.mat');
+% 
+% %% === Sensitivity comparison (first 30 periods) ===
+% z = 30;
+% 
+% % Ensure column vectors
+% GDP_baseline              = GDP_baseline(:);
+% GDP_betahigh              = GDP_betahigh(:);
+% GDP_ypsilonhigh           = GDP_ypsilonhigh(:);
+% GDP_betahigh_ypsilonhigh  = GDP_betahigh_ypsilonhigh(:);
+% 
+% temp_baseline             = temp_baseline(:);
+% temp_betahigh             = temp_betahigh(:);
+% temp_ypsilonhigh          = temp_ypsilonhigh(:);
+% temp_betahigh_ypsilonhigh = temp_betahigh_ypsilonhigh(:);
+% 
+% % Clamp to the shortest available length
+% z = min([z, numel(GDP_baseline), numel(GDP_betahigh), ...
+%             numel(GDP_ypsilonhigh), numel(GDP_betahigh_ypsilonhigh)]);
+% 
+% t = (1:z);
+% 
+% %% === GDP Comparison (tab 1) ===
+% figure('Name','GDP Sensitivity (β, υ)','NumberTitle','off');
+% hold on; grid off;
+% 
+% % --- Baseline (dark blue, no markers)
+% plot(t, GDP_baseline(1:z), '-', 'Color',[0 0.2 0.6], 'LineWidth', 1.2, ...
+%      'DisplayName','Baseline');
+% 
+% % --- υ high (red, X)
+% plot(t, GDP_ypsilonhigh(1:z), '-.x', 'Color',[0.85 0 0], 'LineWidth', 1.0, ...
+%      'MarkerSize',4, 'DisplayName','\beta = 0.985, \Upsilon = 1');
+% 
+% 
+% % --- β high (gold, circle)
+% plot(t, GDP_betahigh(1:z), '-o', 'Color',[0.9 0.7 0.1], 'LineWidth', 1.0, ...
+%      'MarkerSize',4, 'DisplayName','\beta = 0.999');
+% 
+% % --- β high + υ high (green, circle)
+% plot(t, GDP_betahigh_ypsilonhigh(1:z), ':o', 'Color',[0 0.6 0], 'LineWidth', 1.0, ...
+%      'MarkerSize',4, 'DisplayName','\beta = 0.999, \Upsilon = 1');
+% 
+% xlabel('Period');
+% ylabel('GDP (billion USD)');
+% title('GDP Sensitivity to beta and ypsilon)');
+% legend('Location','bestoutside');
+% xlim([0 28])
+% set(gca,'FontSize',11);
 
 
 % %% === Temperature Comparison (tab 2) ===
@@ -2998,36 +3071,36 @@ set(gca,'FontSize',11);
 
 
 %% Check savings rates
-% === Load saved savings rate vectors ===
-load('r_baseline.mat', 'r_baseline');
-load('r_nestedcd_lf.mat', 'r_nestedcd_lf');
-load('r_enK_effE.mat', 'r_enK_effE');
-load('r_beta999_ypsilon1.mat', 'r_beta999_ypsilon1');
-
-% === Automatically determine common time horizon (shortest vector length) ===
-T = min([length(r_baseline), length(r_nestedcd_lf), length(r_enK_effE), length(r_beta999_ypsilon1)]);
-t = (1:T)';
-
-% === Combine into table ===
-savings_table = table(t, ...
-    r_baseline(1:T), ...
-    r_nestedcd_lf(1:T), ...
-    r_enK_effE(1:T), ...
-    r_beta999_ypsilon1(1:T), ...
-    'VariableNames', {'Period', 'Baseline', 'LaissezFaire', 'enK_effE', 'beta999_ypsilon1'});
-
-% === Display the full table ===
-disp('Full comparison of savings rates over time:');
-disp(savings_table);
-
-% === Create summary of initial values ===
-summary_table = table( ...
-    r_baseline(1), ...
-    r_nestedcd_lf(1), ...
-    r_enK_effE(1), ...
-    r_beta999_ypsilon1(1), ...
-    'VariableNames', {'Baseline', 'LaissezFaire', 'enK_effE', 'beta999_ypsilon1'});
-
-disp(' ');
-disp('Summary: Initial savings rate (t=1) in each scenario:');
-disp(summary_table);
+% % === Load saved savings rate vectors ===
+% load('r_baseline.mat', 'r_baseline');
+% load('r_nestedcd_lf.mat', 'r_nestedcd_lf');
+% load('r_enK_effE.mat', 'r_enK_effE');
+% load('r_beta999_ypsilon1.mat', 'r_beta999_ypsilon1');
+% 
+% % === Automatically determine common time horizon (shortest vector length) ===
+% T = min([length(r_baseline), length(r_nestedcd_lf), length(r_enK_effE), length(r_beta999_ypsilon1)]);
+% t = (1:T)';
+% 
+% % === Combine into table ===
+% savings_table = table(t, ...
+%     r_baseline(1:T), ...
+%     r_nestedcd_lf(1:T), ...
+%     r_enK_effE(1:T), ...
+%     r_beta999_ypsilon1(1:T), ...
+%     'VariableNames', {'Period', 'Baseline', 'LaissezFaire', 'enK_effE', 'beta999_ypsilon1'});
+% 
+% % === Display the full table ===
+% disp('Full comparison of savings rates over time:');
+% disp(savings_table);
+% 
+% % === Create summary of initial values ===
+% summary_table = table( ...
+%     r_baseline(1), ...
+%     r_nestedcd_lf(1), ...
+%     r_enK_effE(1), ...
+%     r_beta999_ypsilon1(1), ...
+%     'VariableNames', {'Baseline', 'LaissezFaire', 'enK_effE', 'beta999_ypsilon1'});
+% 
+% disp(' ');
+% disp('Summary: Initial savings rate (t=1) in each scenario:');
+% disp(summary_table);

@@ -1,4 +1,4 @@
-function [c, ceq] = nestedcdnomin_Constraints(x0,A2t,A3t,Delta_G,Delta,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon)
+function [c, ceq] = nestedcdnomin_Constraints(x,A2t,A3t,Delta,Delta_G,in_GDP,en_K,eff_E,G0,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gKd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 4: Constraints                                 %%%
@@ -154,11 +154,11 @@ GDPn = zeros(n,1);
 Ktn(1) = Kt1(T); 
 oiln = zeros(n,1);
 En = zeros(n,1);
-% minbgp = zeros(n,1);
-% greenbgp = zeros(n,1);
-% E3bgp = zeros(n,1);
-% Gtn = zeros(n+1,1);
-% Gtn(1) = Gt1(T);
+minbgp = zeros(n,1);
+greenbgp = zeros(n,1);
+E3bgp = zeros(n,1);
+Gtn = zeros(n+1,1);
+Gtn(1) = Gt1(T);
 
 
 for i = 1:1:n
