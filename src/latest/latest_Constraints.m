@@ -1,16 +1,26 @@
 
-function f = nestedcd_Objective(x,B,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon) 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%      Section 3: Objective function                          %%%
+%%%      Section 4: Constraints                                 %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%Compute consumption based on x = [{Kt+1},{Rt+1},{pi0t},{pi2t}]:
+function [c, ceq] = nestedcd_Constraints(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%Positive Consumption Constraint & Positive Oil Constraint%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%Compute consumption and oil resources based on x = [{Kt+1},{Rt+1},{pi0t},{pi2t}]:
 %Step 1: Compute implied energy inputs
 %Step 2: Compute carbon emissions and concentrations
 %Step 3: Compute output and consumption
 
-%%Step 4: Evaluate objective function at {Ct}
+%%WITH MINERAL CONSTRAINT 
+c = zeros(3*T+2,1);  
+
+%%WITHOUT MINERAL CONSTRAINT
+% c = zeros(2*T+1,1);  
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%Step 1: Energy Inputs%%
@@ -23,20 +33,20 @@ for i = 1:1:T-2
 end
     ex_Oil = (x(T-1+T-2)-x(T-1+T-1))/(x(T-1+T-2));    %Fraction of oil left extracted in period T-1
     oil(T) = x(T-1+T-1)*ex_Oil;
-ex_rates = zeros(T-1,1);
-for i = 1:1:T-1
-    ex_rates(i) = oil(i)/x(T+i-1);
-end
+ for i = 1:1:T
+     c(T+i) = (-1)*(oil(i)-0.0001);                   %Positive oil constraint
+ end
+    c(2*T+1) = (ex_Oil-1);
 coal = zeros(T,1);
 for i = 1:1:T
-    coal(i) = x(2*(T-1)+i)*A2t(i)*N;
+    coal(i) = x(2*(T-1)+i)*(A2t(i)*N);
 end
 
+% %% Without mineral constraints (same as GHKT)
 % E3 = zeros(T,1);
 % for i = 1:1:T;
 %     E3(i) = x(2*(T-1)+T+i)*(A3t(i)*N);
 % end
-
 
 %%%%%% INDEX FOR MINERAL STOCK = x0(2*(T-1)+2*T+i)
 mineral = zeros(T,1);
@@ -46,13 +56,17 @@ for i = 1:1:T-2
 end
     ex_Min = (x(2*(T-1)+2*T+(T-3))-x(2*(T-1)+2*T+(T-2)))/(x(2*(T-1)+2*T+(T-3)));    %Fraction of minerals left extracted in period T-1
     mineral(T) = x(2*(T-1)+2*T+(T-2))*ex_Min;
+for i = 1:1:T
+    c(2*T+1+i) = (-1)*(mineral(i)-0.0001);                                 %Positive mineral constraint
+end
+    c(3*T+2) = (ex_Min-1);
 
 
 %% Index for labour share Green Energy = x0(2*(T-1)+T+i)
 %%Green capital production
 green = zeros(T,1);
 for i = 1:1:T
-     green(i) = (((kappaL(i)*(x(2*(T-1)+T+i)*A3t(i)*N)^rho_E3)+(kappaM(i)*(phi_m*mineral(i))^rho_E3)))^(1/rho_E3);
+    green(i) = (((kappaL(i)*(x(2*(T-1)+T+i)*A3t(i)*N)^rho_E3)+(kappaM(i)*(phi_m*mineral(i))^rho_E3)))^(1/rho_E3);
 end
 
 %%Green capital stock (comment out for Delta_G = 1)
@@ -70,17 +84,9 @@ for i = 1:1:T
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 energy = zeros(T,1);
-for i = 1:1:T 
-    energy(i) = ((kappa1*oil(i)^rho)+(kappa2*coal(i)^rho)+(kappa3*E3(i)^rho))^(1/rho);
-end
-
-
-%% compute fossil fuel use
-fossil_fuel = zeros(T,1);
 for i = 1:1:T
-    fossil_fuel(i) = oil(i) + coal(i);
+    energy(i) = ((kappa1*oil(i)^rho)+(kappa2*coal(i)^rho)+(kappa3*E3(i)^rho))^(1/rho);
 end
 
 %%%%%%%%%%%%%
@@ -175,40 +181,15 @@ end
 
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%Step 4: Compute Utility%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-ct = zeros(T+n,1);
-for i = 1:1:T+n
-    ct(i) = Ct(i)/1000000;  %Re-scale units
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%Positive Consumption Constraint:%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for i = 1:1:T
+    c(i) = (-1)*(Ct(i)-0.0001);
 end
 
-U = zeros(T+n,1);
 
-for i = 1:1:T+n-1
-    if Ct(i)<0
-        U(i) = -99;
-    else
-        if sigma~=1
-             U(i) =(beta^(i-1))*(((ct(i))^(1-sigma))-1)/(1-sigma);
-        else
-            U(i) = (beta^(i-1))*log(ct(i));
-        end
-    end
+%%%Equality Constraint for Benchmark Case%%%
+ceq = [];
 end
 
-   if Ct(T+n)<0
-       Ucont = -99;
-   else
-       if sigma~=1
-            Ucont = (beta^(T+n-1))*(((ct(T+n)^(1-sigma))-1)/(1-sigma))*(1/(1-beta*((1+gZBGP)^(1-sigma))));
-       else
-            Ucont = (beta^(T+n-1))*log(ct(T+n))*(1/(1-beta*((1+gZBGP)^(1-sigma))));
-       end
-   end
-  
-
- f = (-1)*(sum(U)+Ucont);
-end

@@ -3,7 +3,7 @@
 %%%      Section 4: Constraints                                 %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [c, ceq] = nestedcd_Constraints(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon)
+function [c, ceq] = nestedcd_Constraints(x,B,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%Positive Consumption Constraint & Positive Oil Constraint%%%%
@@ -21,6 +21,8 @@ c = zeros(3*T+2,1);
 %%WITHOUT MINERAL CONSTRAINT
 % c = zeros(2*T+1,1);  
 
+%%WITH MINERAL CONSTRAINT AND CARBON BUDGET
+% c = zeros(3*T+3,1);  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%Step 1: Energy Inputs%%
@@ -113,6 +115,9 @@ for i = 1:1:T-1
     S2t_Sbar(1+i) = (1-phi)*S2t_Sbar(i)+phi0*(1-phiL)*emiss(1+i);
     St(1+i) = Sbar+S1t(1+i)+S2t_Sbar(1+i);
 end
+
+%%CARBON BUDGET CONSTRAINT
+%c(3*T+3) = (sum(emiss) - B) / B;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

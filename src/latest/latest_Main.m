@@ -75,11 +75,11 @@ K0 = (alpha*Y2024*10)/(r2024d+Delta);   %GHKT Base year capital stock in billion
 
 %Recalibrated Energy (Using IEA data):
  pi00 = 1;               %Base period share of labor devoted to final goods production
- E1_2024 = 55.292;       %x1000 TWh per year
+ E1_2024 = 55.292;  %x1000 TWh per year
  E2_2024 = 45.851;       %x1000 TWh per year
  E3_2024 = 9.225;        %x1000 TWh per year
  E0_2024 = ((kappa1*E1_2024^rho)+(kappa2*E2_2024^rho)+(kappa3*E3_2024^rho))^(1/rho);
- E0 = E0_2024*10;        %x1000 TWh per decade
+ E0 = E0_2024*100;        %x1000 TWh per decade
 
 
 %%%Productivity Growth Rates%%
@@ -185,7 +185,7 @@ en_K(1) = (eff_E(1) * E0)/(K0*10);      % initial usable energy throughput of ca
 %en_K(1) = (Y2024*10)/(exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(((eff_E(1)*E0)/(K0))^alpha);
 
 %Test 3:
-%en_K(1) = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*((eff_E(1) * E0)/(K0*10));  
+%en_K(1) = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*((eff_E(1) * E0)/(K0));  
  
 
 
@@ -245,12 +245,11 @@ end
 u1_cap = en_K(1) * (K0*10);            % capital-side usable energy at T=1 in x1000TWh per decade 
 u1_energy = eff_E(1) * E0;             % energy-side usable energy at T=1 in x1000TWh per decade
 usable1 = min(u1_cap, u1_energy); 
-Yt1_model = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(usable1.^alpha);   
-%Yt1_model = (usable1.^alpha);   
+%Yt1_model = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(usable1.^alpha);   
+Yt1_model = (usable1.^alpha);   
 eta_GDP = Yt1_model/ (Y2024*10);       % output to GDP conversion (x1000TWh usable energy per 1 billion dollars)       
 
-%%TEST CARBON BUDGET
-B = 0;
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -349,8 +348,8 @@ x0(2*(T-1)+T+T) = 0.01;
 %%Check Constraints and Objective Function Value at x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-f = nestedcd_Objective(x0,B,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
-[c, ceq] = nestedcd_Constraints(x0,B,A2t,A3t,Delta_G,Delta,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
+f = nestedcd_Objective(x0,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
+[c, ceq] = nestedcd_Constraints(x0,A2t,A3t,Delta_G,Delta,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
 
 %%%%%%%%%%%
 %%%SOLVE%%%
@@ -358,7 +357,7 @@ f = nestedcd_Objective(x0,B,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,
 
 %OLD: options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','active-set');
 options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','interior-point');
-[x, fval,exitflag] = fmincon(@(x)nestedcd_Objective(x,B,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)nestedcd_Constraints(x,B,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), options);
+[x, fval,exitflag] = fmincon(@(x)nestedcd_Objective(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)nestedcd_Constraints(x,A2t,A3t,Delta,Delta_G,en_K,eff_E,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), options);
 
 
 %%Save Output%%
