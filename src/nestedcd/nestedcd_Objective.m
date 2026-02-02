@@ -112,24 +112,46 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%Output and Consumption through T%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+U = zeros(T,1);
 Yt = zeros(T,1);
 Ct = zeros(T,1);
 Kt1 = zeros(T,1);
 GDP = zeros(T,1);
-Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
-    %Yt(1) = (min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
+% %% Other PFs
+% % Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
+%     Yt(1) = (min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
+    
+ %% Trial new PF:
+    U(1) = ((kappa_capacity*(en_K(1)*Ktn(i))^rho_energy)+(kappa_supply*(ex(1)*energy(1))^rho_energy))^(1/rho_energy);
+    Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(U(1)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));    
+    
+    
     GDP(1) = Yt(1)/(eta_GDP);
 Ct(1) = (1-x(1))*GDP(1);
 Kt1(1) = x(1)*GDP(1)+(1-Delta)*K0;
 for i = 1:1:T-2
-    Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
-          %Yt(1+i) = (min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
+    % Other PFs
+    % Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
+          %Yt(1+i) = (min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha)); %% Trial new PF:
+    
+%% Trial new PF:          
+    U(1+i) = ((kappa_capacity*(en_K(1+i)*Kt1(i))^rho_energy)+(kappa_supply*(ex(1+i)*energy(1+i))^rho_energy))^(1/rho_energy);
+    Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(U(1+i)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+    
+          
     GDP(1+i) = Yt(1+i)/(eta_GDP);  %in billion dollars
     Kt1(1+i) = x(1+i)*GDP(1+i)+(1-Delta)*Kt1(i);
     Ct(1+i) = (1-x(i+1))*GDP(1+i); 
 end
-Yt(T) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
-    %Yt(T) =  (min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
+% %% Other PFs
+% %Yt(T) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
+%     %Yt(T) =  (min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
+
+%% Trial new PF:
+    U(T) = ((kappa_capacity*(en_K(T)*Kt1(T-1))^rho_energy)+(kappa_supply*(ex(T)*energy(T))^rho_energy))^(1/rho_energy);
+    Yt(T) = (exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+    
+    
 GDP(T) = Yt(T)/eta_GDP;
 theta = x(T-1);
 Ct(T) = GDP(T)*(1-theta);
@@ -144,6 +166,7 @@ Kt1(T) = theta*GDP(T)+(1-Delta)*Kt1(T-1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 n = 100;
 Ktn = zeros(n+1,1);
+Un = zeros(n,1);
 Ytn = zeros(n,1);
 GDPn = zeros(n,1);
 Ktn(1) = Kt1(T); 
@@ -164,8 +187,16 @@ for i = 1:1:n
     E3bgp(i) = psi*Gtn(i);
     En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
         % En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3(T)*(1+gZ_green)^rho))^(1/rho);
-    Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
-        %Ytn(i) = (min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
+    
+        % %% Other PFs
+        % %Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
+        % %Ytn(i) = (min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
+        % 
+     
+    %% Trial new PF:
+        Un(i) = ((kappa_capacity*(en_K(T)*Ktn(i))^rho_energy)+(kappa_supply*(ex(T)*En(i))^rho_energy))^(1/rho_energy);
+        Ytn(i) = (exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));       
+        
     GDPn(i) = Ytn(i)/eta_GDP;
     Ct(T+i) = (1-theta)*GDPn(i);
     Ktn(i+1) = theta*GDPn(i)+(1-Delta)*Ktn(i);
