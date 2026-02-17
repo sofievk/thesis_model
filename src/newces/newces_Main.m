@@ -188,7 +188,6 @@ en_K(1) = (ex(1) * E0)/(K0*10);      % initial usable energy throughput of capit
 %en_K(1) = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*((ex(1) * E0)/(K0*10));  
  
 
-
 %%%Decadal growth rates
 gEk = 0.00;                             % growth in energy throughput of capital
 gEff = 0.00;                            % growth in energy-to-exergy efficiency
@@ -199,6 +198,41 @@ for i = 1:1:T-1
     en_K(i+1) = en_K(i)*(1+gEk)^10;    
     ex(i+1) = ex(i)*(1+gEff);  
 end
+
+%%%%%%   CES FUNCTION FOR ENERGY AND CAPITAL  %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% kappa_supply = zeros(T,1);
+% kappa_capacity = zeros(T,1);
+
+kappa_supply(1) = 0.5;
+kappa_capacity(1) = 1-kappa_supply(1);
+% for i = 1:1:T-1
+%     kappa_supply(1+i) = kappa_supply(1);
+%     kappa_capacity(1+i) = 1-kappa_supply(1);
+% end
+    rho_energy = -50;
+
+
+%%Set scalar
+U0 = ((en_K(1)*K0)^rho_energy + (ex(1)*E0)^rho_energy)^(1/rho_energy);               % Initial decadal usable energy                                                                        
+A = (Y2024*10) / (exp((-gamma(1))*((S1_2000 + S2_2000) - Sbar))*(U0^alpha)*(N*pi00^(1-alpha)));
+
+
+%%% eta_GDP for LEONTIEF (rho = -50): 
+u1_cap = en_K(1) * (K0*10);            % capital-side usable energy at T=1 in x1000TWh per decade 
+u1_energy = ex(1) * E0;             % energy-side usable energy at T=1 in x1000TWh per decade
+usable1 = min(u1_cap, u1_energy); 
+Yt1_model = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(usable1.^alpha);   
+eta_GDP = Yt1_model/ (Y2024*10);       % output to GDP conversion (x1000TWh usable energy per 1 billion dollars)   
+
+%%% eta_GDP for Cobb-Douglas:  
+% Yt1_model = A*(exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(U0^alpha);   
+% eta_GDP = Yt1_model/ (Y2024*10);       % output to GDP conversion (x1000TWh usable energy per 1 billion dollars)       
+
+
+%%TEST CARBON BUDGET
+B = 0;
+
 
 %%%%%%   Mineral Parameters  %%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -241,23 +275,6 @@ for i = 1:1:T-1
 end                                 
 
 
-%%% Calibrating eta_GDP
-u1_cap = en_K(1) * (K0*10);            % capital-side usable energy at T=1 in x1000TWh per decade 
-u1_energy = ex(1) * E0;             % energy-side usable energy at T=1 in x1000TWh per decade
-usable1 = min(u1_cap, u1_energy); 
-Yt1_model = (exp((-gamma(1))*((S1_2000+S2_2000)-Sbar)))*(usable1.^alpha);   
-%Yt1_model = (usable1.^alpha);   
-eta_GDP = Yt1_model/ (Y2024*10);       % output to GDP conversion (x1000TWh usable energy per 1 billion dollars)       
-
-%%TEST CARBON BUDGET
-B = 0;
-
-%%%%%%   CES FUNCTION FOR ENERGY AND CAPITAL  %%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-kappa_supply = 0.5;
-kappa_capacity = 1-0.5;
-rho_energy = -10;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -356,8 +373,8 @@ x0(2*(T-1)+T+T) = 0.01;
 %%Check Constraints and Objective Function Value at x0%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-f = nestedcd_Objective(x0,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
-[c, ceq] = nestedcd_Constraints(x0,B,A2t,A3t,Delta_G,Delta,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon);
+f = newces_Objective(x0,A,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,kappa_capacity, kappa_supply,phi,phi0,phiL,phi_m,psi,rho,rho_E3,rho_energy,sigma,ypsilon);
+[c, ceq] = newces_Constraints(x0,A,B,A2t,A3t,Delta_G,Delta,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,kappa_capacity, kappa_supply,phi,phi0,phiL,phi_m,psi,rho,rho_E3,rho_energy,sigma,ypsilon);
 
 %%%%%%%%%%%
 %%%SOLVE%%%
@@ -365,7 +382,7 @@ f = nestedcd_Objective(x0,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,
 
 %OLD: options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','active-set');
 options = optimoptions(@fmincon,'Tolfun',1e-12,'TolCon',1e-12,'MaxFunEvals',500000,'MaxIter',6200,'Display','iter','MaxSQPIter',10000,'Algorithm','interior-point');
-[x, fval,exitflag] = fmincon(@(x)nestedcd_Objective(x,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)nestedcd_Constraints(x,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,phi,phi0,phiL,phi_m,psi,rho,rho_E3,sigma,ypsilon), options);
+[x, fval,exitflag] = fmincon(@(x)newces_Objective(x,A,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,kappa_capacity, kappa_supply,phi,phi0,phiL,phi_m,psi,rho,rho_E3,rho_energy,sigma,ypsilon), x0, [], [], [], [], lb, ub, @(x)newces_Constraints(x,A,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,kappa_capacity, kappa_supply,phi,phi0,phiL,phi_m,psi,rho,rho_E3,rho_energy,sigma,ypsilon), options);
 
 
 %%Save Output%%
@@ -541,36 +558,42 @@ Yt = zeros(T,1);
 Ct = zeros(T,1);
 Kt1 = zeros(T,1);
 GDP = zeros(T,1);
+
+
+%%Option 1 PF Leontief:
 %Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(min(en_K(1)*K0,ex(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
     %Yt(1) = (min(en_K(1)*K0,ex(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
     
- %% Trial new PF:
-    U(1) = ((kappa_capacity*(en_K(1)*Ktn(i))^rho_energy)+(kappa_supply*(ex(1)*energy(1))^rho_energy))^(1/rho_energy);
-    Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(U(1)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
+%%Option 2 PF Nested CES: 
+    U(1) = (((kappa_capacity*(en_K(1)*K0)^rho_energy)+(kappa_supply*(ex(1)*energy(1))^rho_energy)))^(1/rho_energy);
+    Yt(1) = A*(exp((-gamma(1))*(St(1)-Sbar)))*(U(1)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
 
-   
-    
+
     GDP(1) = Yt(1)/(eta_GDP);
 Ct(1) = (1-x(1))*GDP(1);
 Kt1(1) = x(1)*GDP(1)+(1-Delta)*K0;
 for i = 1:1:T-2
-    %Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(min(en_K(1+i)*Kt1(i),ex(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
-          %Yt(1+i) = (min(en_K(1+i)*Kt1(i),ex(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
 
- %% Trial new PF:
-    U(1+i) = ((kappa_capacity*(en_K(1+i)*Kt1(i))^rho_energy)+(kappa_supply*(ex(1+i)*energy(1+i))^rho_energy))^(1/rho_energy);
-    Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(U(1+i)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+%%Option 1 PF Leontief:
+%Yt(1+i) = (exp((-gamma(1+i))*(St(1+i)-Sbar)))*(min(en_K(1+i)*Kt1(i),ex(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
+    %Yt(1+i) = (min(en_K(1+i)*Kt1(i),ex(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));
+
+%%Option 2 PF Nested CES: 
+    U(1+i) = (((kappa_capacity*(en_K(1+i)*Kt1(i))^rho_energy)+(kappa_supply*(ex(1+i)*energy(1+i))^rho_energy)))^(1/rho_energy);
+    Yt(1+i) = A*(exp((-gamma(1+i))*(St(1+i)-Sbar)))*(U(1+i)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
           
     GDP(1+i) = Yt(1+i)/(eta_GDP);  %in billion dollars
     Kt1(1+i) = x(1+i)*GDP(1+i)+(1-Delta)*Kt1(i);
     Ct(1+i) = (1-x(i+1))*GDP(1+i); 
 end
-%Yt(T) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Kt1(T-1),ex(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
-    %Yt(T) =  (min(en_K(T)*Kt1(T-1),ex(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
 
- %% Trial new PF:
-    U(T) = ((kappa_capacity*(en_K(T)*Kt1(T-1))^rho_energy)+(kappa_supply*(ex(T)*energy(T))^rho_energy))^(1/rho_energy);
-    Yt(T) = (exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+%%Option 1 PF Leontief:
+% %Yt(T) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Kt1(T-1),ex(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
+%     %Yt(T) =  (min(en_K(T)*Kt1(T-1),ex(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
+
+%%Option 2 PF Nested CES: 
+    U(T) = (((kappa_capacity*(en_K(T)*Kt1(T-1))^rho_energy)+(kappa_supply*(ex(T)*energy(T))^rho_energy)))^(1/rho_energy);
+    Yt(T) = A*(exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
 
 
 GDP(T) = Yt(T)/eta_GDP;
@@ -587,7 +610,7 @@ Kt1(T) = theta*GDP(T)+(1-Delta)*Kt1(T-1);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 n = 100;
 Ktn = zeros(n+1,1);
-Un = zeros(n+1,1);
+Un = zeros(n,1);
 Ytn = zeros(n,1);
 GDPn = zeros(n,1);
 Ktn(1) = Kt1(T); 
@@ -609,12 +632,15 @@ for i = 1:1:n
     En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
         %% Without minerals E3:
         %En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3(T)*(1+gZ_green)^rho))^(1/rho);
-    %Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),ex(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
-        %Ytn(i) = (min(en_K(T)*Ktn(i),ex(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
     
-    %% Trial new PF:
-        Un(i) = ((kappa_capacity*(en_K(T)*Ktn(i))^rho_energy)+(kappa_supply*(ex(T)*energy(T))^rho_energy))^(1/rho_energy);
-        Ytn(i) = (exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+       
+%%Option 1 PF Leontief:
+        % %Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),ex(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
+        % %Ytn(i) = (min(en_K(T)*Ktn(i),ex(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));     
+         
+%%Option 2 PF Nested CES: 
+        Un(i) = (((kappa_capacity*(en_K(T)*Ktn(i))^rho_energy)+(kappa_supply*(ex(T)*En(i))^rho_energy)))^(1/rho_energy);
+        Ytn(i) = A*(exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
     
         
     GDPn(i) = Ytn(i)/eta_GDP;
