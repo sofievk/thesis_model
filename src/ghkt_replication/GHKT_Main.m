@@ -39,6 +39,12 @@ kappa1 = 0.5429;   %Relative efficiency of oil
 kappa2 = 0.1015;   %Relative efficiency of coal
 kappa3 = 1-kappa1-kappa2; %Relative efficiency of low-carbon technologies
 
+%% Option 2 (Based on change in TWh 2014-2024)
+% rho = -0.058;
+% kappa1 = 0.455;
+% kappa2 = 0.078;
+% kappa3 = 1 - kappa1 - kappa2; 
+
 
 %%Final Goods Production%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -342,10 +348,25 @@ plot(y2(1:z),share_oil(1:z),'Color',[0.95 0.65 0.2], 'LineWidth', 1.5);
 ylabel('Energy Share');
 legend('Low Carbon Energy','Coal', 'Oil');
 grid off;
-xlim([2025 2250]);
+xlim([2025 2250])
+ylim([0 1])
+title('Energy Mix');
 
 
-
+%% Diagnostic plot energy sources over time
+z = 20;
+figure;
+hold on;
+plot(y2(1:z),oil(1:z), '-b', 'LineWidth', 2);
+plot(y2(1:z),wind(1:z), '-g', 'LineWidth', 2);
+plot(y2(1:z),coal(1:z), '-r', 'LineWidth', 2); 
+ylabel('Energy (x1000 TWh)')
+xlabel('Year');
+ylabel('Energy production (GtC)');
+title('Energy in GtC');
+legend({'Oil', 'Low-carbon', 'Coal'}, 'Location', 'best');
+grid off;
+xlim([2020 2100])
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -437,6 +458,8 @@ title('Temperature Increase (GHKT baseline)');
 %%From GtC to x1000 TWh 
 oil_TWh = zeros(T,1);
 coal_TWh = zeros(T,1);
+wind_TWh = zeros(T,1); 
+
 
 GtC_to_TWh_oil = 14793.65;  % 1 GtC = 14,793.65 TWh 
 GtC_to_TWh_coal = 9920.63;  % 1 GtC = 9,920.63 TWh
@@ -444,12 +467,35 @@ GtC_to_TWh_coal = 9920.63;  % 1 GtC = 9,920.63 TWh
 for i = 1:1:T;
 oil_TWh(i) = oil(i) * (GtC_to_TWh_oil / 1000);   % convert to x1000 TWh
 coal_TWh(i) = coal(i) * (GtC_to_TWh_coal / 1000); % convert to x1000 TWh
+wind_TWh(i) = wind(i)/0.1008;
+energy_TWh(i) = energy(i)/((0.1008+0.0676)/2);
 end
 
+%Save 
 oil_ghkt_twh = oil_TWh; 
 save ('oil_ghkt_twh','oil_ghkt_twh');
 coal_ghkt_twh = coal_TWh;
 save('coal_ghkt_twh','coal_ghkt_twh'); 
+wind_ghkt_twh = wind_TWh;
+save('wind_ghkt_twh','wind_ghkt_twh');
+
+
+%% Diagnostic plot energy sources over time
+z = 20;
+figure;
+hold on;
+plot(y2(1:z),oil_ghkt_twh(1:z), '-b', 'LineWidth', 2);
+plot(y2(1:z),wind_ghkt_twh(1:z), '-g', 'LineWidth', 2);
+plot(y2(1:z),coal_ghkt_twh(1:z), '-r', 'LineWidth', 2); 
+ylabel('Energy (x1000 TWh)')
+xlabel('Year');
+ylabel('Energy production (TWh)');
+title('Energy in TWh Coal, Oil, and Renewables');
+legend({'Oil', 'Low-carbon', 'Coal'}, 'Location', 'best');
+grid off
+ylim([0 1600])
+xlim([2020 2100])
+
 
 %%Net-of-damages GDP
 load('Yt_ghkt_lf.mat','Yt_ghkt_lf');
@@ -469,7 +515,8 @@ xlim([2000 2250])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Note: Only save for appropriate model scenario
-
+energy_ghkt_v1 = energy;
+save('energy_ghkt_v1','energy_ghkt_v1');
 oil_ghkt_v1 = oil;
 save('oil_ghkt_v1','oil_ghkt_v1')
 coal_ghkt_v1 = coal;
@@ -492,6 +539,8 @@ fossil_fuel_ghkt_v1 = fossil_fuel;
 save('fossil_fuel_ghkt_v1','fossil_fuel_ghkt_v1');
 temp_ghkt_v1 = temp;
 save('temp_ghkt_v1','temp_ghkt_v1');
+Kt1_ghkt_v1 = Kt1; 
+save('Kt1_ghkt_v1', 'Kt1_ghkt_v1'); 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 5: Graph Optimal Carbon Taxes     %%%
@@ -535,9 +584,43 @@ xlabel('Year', 'FontSize', 11);
 ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
 title('Carbon Tax ($/mtC) (GHKT baseline)');
 
+%% Combined Temperature and Tax $ 
+load('carbon_tax_ghkt_v1','carbon_tax_ghkt_v1')
+load('temp_ghkt_v1','temp_ghkt_v1')
+
+z = 30;
+
+figure;
+yyaxis left
+plot(y2(1:z), carbon_tax_ghkt_v1(1:z), '-b', 'LineWidth', 1.5);
+ylabel('Carbon Tax ($/mtC)', 'FontSize', 11);
+ylim([40 70])
+
+yyaxis right
+plot(y2(1:z), temp_ghkt_v1(1:z), '-r', 'LineWidth', 1.5);
+ylabel('Temperature Increase (degrees C)', 'FontSize', 11);
+ylim([0 4])
+
+xlabel('Year', 'FontSize', 11);
+title('Carbon Tax and Temperature');
+xlim([2010 2225])
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%  Energy Use Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% Energy
+load('energy_ghkt_v1','energy_ghkt_v1')
+
+z = 25;
+figure;
+plot(y2(1:z), energy_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
+xlabel('Year', 'FontSize', 11);
+ylabel('GtC', 'FontSize', 11);
+title('Energy Use (GHKT baseline)');
+xlim([2010 2225])
+
 
 %% Oil
 load('oil_ghkt_v1', 'oil_ghkt_v1')
@@ -624,6 +707,19 @@ xlabel('Year', 'FontSize', 11);
 ylabel('Share', 'FontSize', 11);
 title('Labour Share to Coal Production (GHKT baseline)');
 
+%% Labour shares combined
+z = 25;
+figure(Name='Labour Shares combined');
+hold on;
+plot(y2(1:z), N2_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
+plot(y2(1:z), N3_ghkt_v1(1:z), ' -g', 'LineWidth', 1.5);
+hold off; 
+xlabel('Year', 'FontSize', 11);
+ylabel('Share', 'FontSize', 11);
+title('Labour Shares E2 and E3 (GHKT baseline)');
+legend('coal','low-carbon');
+xlim([2010 2225])
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%  GDP Growth Over Time  %%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -635,3 +731,49 @@ plot(y2(1:z), Yt_ghkt_v1(1:z), ' -b', 'LineWidth', 1.5);
 xlabel('Year', 'FontSize', 11);
 ylabel('Output', 'FontSize', 11);
 title('GDP (GHKT baseline)');
+
+%% Stacked chart r, K, C, GDP
+z = length(r_ghkt_v1);
+
+figure; hold on
+yyaxis left
+h = area(y2(1:z), [Ct_ghkt_v1(1:z) Kt1_ghkt_v1(1:z)], 'LineStyle','none');
+h(1).FaceAlpha = .5; h(2).FaceAlpha = .5;
+h(1).FaceColor = [0.2 0.6 0.8]; h(2).FaceColor = [0.8 0.4 0.4];
+
+p = plot(y2(1:z), Yt_ghkt_v1(1:z), 'k--');
+yyaxis right
+plot(y2(1:z), r_ghkt_v1(1:z), '--');
+ylim([0.0 0.50]) 
+legend([h(1) h(2) p], 'Consumption','Capital','GDP', 'Location','southeast');
+title('GDP, consumption, capital, and savings rate');
+xlabel('Year')
+xlim([2010 2300])
+
+%% Load data
+load('energy_ghkt_v1','energy_ghkt_v1')
+load('Yt_ghkt_v1','Yt_ghkt_v1')
+
+z = 25;   % use same horizon for both
+
+
+figure;
+
+%% Left axis: Output (blue)
+yyaxis left
+plot(y2(1:z), Yt_ghkt_v1(1:z), '-b', 'LineWidth', 1.5);
+ylabel('GDP ($)', 'FontSize', 11);
+ylim([0 850000])
+
+%% Right axis: Energy (orange)
+yyaxis right
+plot(y2(1:z), energy_TWh(1:z), 'Color', [0.85 0.33 0.10], 'LineWidth', 1.5);
+ylabel('Energy (x1000 TWh approximation)', 'FontSize', 11);
+ylim([50 400])
+
+xlabel('Year', 'FontSize', 11);
+title('GDP and Energy Use (GHKT baseline)');
+xlim([2010 2225]);
+
+legend('GDP','Energy','Location','best');
+grid off;

@@ -1,5 +1,5 @@
 
-function f = newces_Objective(x,A,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,kappa_capacity, kappa_supply,phi,phi0,phiL,phi_m,psi,rho,rho_E3,rho_energy,sigma,ypsilon) 
+function f = newces_Objective(x,A,B,A2t,A3t,Delta,Delta_G,en_K,ex,G0,eta_GDP,K0,M0,N,R0,S1_2000,S2_2000,Sbar,T,alpha,beta,gA,gAd,gZ_coal,gZ_green,gZd_y,gZBGP,gamma,kappaL,kappaM,kappa1,kappa2,kappa3,kappa_capacity, kappa_supply,phi,phi0,phiL,phi_m,psi,rho,rho_E3,rho_energy,sigma,ypsilon) 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%      Section 3: Objective function                          %%%
@@ -32,50 +32,49 @@ for i = 1:1:T
     coal(i) = x(2*(T-1)+i)*A2t(i)*N;
 end
 
-% E3 = zeros(T,1);
-% for i = 1:1:T;
-%     E3(i) = x(2*(T-1)+T+i)*(A3t(i)*N);
-% end
-
-
-%%%%%% INDEX FOR MINERAL STOCK = x0(2*(T-1)+2*T+i)
-mineral = zeros(T,1);
-    mineral(1) = M0-x(2*(T-1)+2*T+1);
-for i = 1:1:T-2
-    mineral(1+i) = x(2*(T-1)+2*T+i)-x(2*(T-1)+2*T+i+1);
-end
-    ex_Min = (x(2*(T-1)+2*T+(T-3))-x(2*(T-1)+2*T+(T-2)))/(x(2*(T-1)+2*T+(T-3)));    %Fraction of minerals left extracted in period T-1
-    mineral(T) = x(2*(T-1)+2*T+(T-2))*ex_Min;
-
-
-%% Index for labour share Green Energy = x0(2*(T-1)+T+i)
-%%Green capital production
-green = zeros(T,1);
-for i = 1:1:T
-     green(i) = (((kappaL(i)*(x(2*(T-1)+T+i)*A3t(i)*N)^rho_E3)+(kappaM(i)*(phi_m*mineral(i))^rho_E3)))^(1/rho_E3);
-end
-
-%%Green capital stock (comment out for Delta_G = 1)
-Gt1 = zeros(T,1);
-Gt1(1) = green(1)+(1-Delta_G)*G0;
-for i = 1:1:T-2
-    Gt1(1+i) = green(1+i)+(1-Delta_G)*Gt1(i);
-end
- Gt1(T) = green(T)+(1-Delta_G)*Gt1(T-1);
-
-%%Low carbon energy production, eq (10)
 E3 = zeros(T,1);
-for i = 1:1:T
-       E3(i) = psi*Gt1(i);
+for i = 1:1:T;
+    E3(i) = x(2*(T-1)+T+i)*(A3t(i)*N);
 end
+
+
+% %%%%%% INDEX FOR MINERAL STOCK = x0(2*(T-1)+2*T+i)
+% mineral = zeros(T,1);
+%     mineral(1) = M0-x(2*(T-1)+2*T+1);
+% for i = 1:1:T-2
+%     mineral(1+i) = x(2*(T-1)+2*T+i)-x(2*(T-1)+2*T+i+1);
+% end
+%     ex_Min = (x(2*(T-1)+2*T+(T-3))-x(2*(T-1)+2*T+(T-2)))/(x(2*(T-1)+2*T+(T-3)));    %Fraction of minerals left extracted in period T-1
+%     mineral(T) = x(2*(T-1)+2*T+(T-2))*ex_Min;
+% 
+% 
+% %% Index for labour share Green Energy = x0(2*(T-1)+T+i)
+% %%Green capital production
+% green = zeros(T,1);
+% for i = 1:1:T
+%      green(i) = (((kappaL(i)*(x(2*(T-1)+T+i)*A3t(i)*N)^rho_E3)+(kappaM(i)*(phi_m*mineral(i))^rho_E3)))^(1/rho_E3);
+% end
+% 
+% %%Green capital stock (comment out for Delta_G = 1)
+% Gt1 = zeros(T,1);
+% Gt1(1) = green(1)+(1-Delta_G)*G0;
+% for i = 1:1:T-2
+%     Gt1(1+i) = green(1+i)+(1-Delta_G)*Gt1(i);
+% end
+%  Gt1(T) = green(T)+(1-Delta_G)*Gt1(T-1);
+% 
+% %%Low carbon energy production, eq (10)
+% E3 = zeros(T,1);
+% for i = 1:1:T
+%        E3(i) = psi*Gt1(i);
+% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 energy = zeros(T,1);
-for i = 1:1:T 
+for i = 1:1:T
     energy(i) = ((kappa1*oil(i)^rho)+(kappa2*coal(i)^rho)+(kappa3*E3(i)^rho))^(1/rho);
 end
-
 
 %% compute fossil fuel use
 fossil_fuel = zeros(T,1);
@@ -123,8 +122,8 @@ GDP = zeros(T,1);
 %     Yt(1) = (min(en_K(1)*K0,eff_E(1)*energy(1))^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
     
 %%Option 2 PF Nested CES: 
-    U(1) = (((kappa_capacity*(en_K(1)*K0)^rho_energy)+(kappa_supply*(ex(1)*energy(1))^rho_energy)))^(1/rho_energy);
-    Yt(1) = A*(exp((-gamma(1))*(St(1)-Sbar)))*(U(1)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
+    U(1) = (((kappa_capacity(1)*(en_K(1)*K0)^rho_energy)+(kappa_supply(1)*(ex(1)*energy(1))^rho_energy)))^(1/rho_energy);
+    Yt(1) = A(1)*(exp((-gamma(1))*(St(1)-Sbar)))*(U(1)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));
 
     
     GDP(1) = Yt(1)/(eta_GDP);
@@ -137,8 +136,8 @@ for i = 1:1:T-2
           %Yt(1+i) = (min(en_K(1+i)*Kt1(i),eff_E(1+i)*energy(1+i))^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha)); %% Trial new PF:
     
 %%Option 2 PF Nested CES:          
-    U(1+i) = (((kappa_capacity*(en_K(1+i)*Kt1(i))^rho_energy)+(kappa_supply*(ex(1+i)*energy(1+i))^rho_energy)))^(1/rho_energy);
-    Yt(1+i) = A*(exp((-gamma(1+i))*(St(1+i)-Sbar)))*(U(1+i)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+    U(1+i) = (((kappa_capacity(1)*(en_K(1+i)*Kt1(i))^rho_energy)+(kappa_supply(1)*(ex(1+i)*energy(1+i))^rho_energy)))^(1/rho_energy);
+    Yt(1+i) = A(1+i)*(exp((-gamma(1+i))*(St(1+i)-Sbar)))*(U(1+i)^alpha)*(((1-x(2*(T-1)+1+i)-x(2*(T-1)+T+1+i))*N)^(1-alpha));   
     
           
     GDP(1+i) = Yt(1+i)/(eta_GDP);  %in billion dollars
@@ -151,8 +150,8 @@ end
 %     %Yt(T) =  (min(en_K(T)*Kt1(T-1),eff_E(T)*energy(T))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));
 
 %%Option 2 PF Nested CES: 
-    U(T) = (((kappa_capacity*(en_K(T)*Kt1(T-1))^rho_energy)+(kappa_supply*(ex(T)*energy(T))^rho_energy)))^(1/rho_energy);
-    Yt(T) = A*(exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));   
+    U(T) = (((kappa_capacity(1)*(en_K(T)*Kt1(T-1))^rho_energy)+(kappa_supply(1)*(ex(T)*energy(T))^rho_energy)))^(1/rho_energy);
+    Yt(T) = A(T)*(exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));   
     
     
 GDP(T) = Yt(T)/eta_GDP;
@@ -175,22 +174,23 @@ GDPn = zeros(n,1);
 Ktn(1) = Kt1(T); 
 oiln = zeros(n,1);
 En = zeros(n,1);
-minbgp = zeros(n,1);
-greenbgp = zeros(n,1);
-E3bgp = zeros(n,1);
-Gtn = zeros(n+1,1);
-Gtn(1) = Gt1(T);
+% minbgp = zeros(n,1);
+% greenbgp = zeros(n,1);
+% E3bgp = zeros(n,1);
+% Gtn = zeros(n+1,1);
+% Gtn(1) = Gt1(T);
 
 
 for i = 1:1:n
     oiln(i) = ex_Oil*x(2*(T-1))*((1-ex_Oil)^i);     %Oil continues to be extracted at rate from period T-1
-    minbgp(i) = ex_Min*x(2*(T-1)+2*T+(T-1))*((1-ex_Min)^i);
-    greenbgp(i) = ((kappaL(T)*(x(2*(T-1)+2*T)*(A3t(T)*(1+gZ_green)^i)^rho_E3)+(kappaM(T)*minbgp(i))^(rho_E3)))^(1/rho_E3);
-    Gtn(i+1) = greenbgp(i) + (1-Delta_G)*Gtn(i);
-    E3bgp(i) = psi*Gtn(i);
-    En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
+    % minbgp(i) = ex_Min*x(2*(T-1)+2*T+(T-1))*((1-ex_Min)^i);
+    % greenbgp(i) = ((kappaL(T)*(x(2*(T-1)+2*T)*(A3t(T)*(1+gZ_green)^i)^rho_E3)+(kappaM(T)*minbgp(i))^(rho_E3)))^(1/rho_E3);
+    % Gtn(i+1) = greenbgp(i) + (1-Delta_G)*Gtn(i);
+    % E3bgp(i) = psi*Gtn(i);
+    % En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3bgp(i)^rho))^(1/rho);
     %%Energy without minerals: 
-    %En(i) = ((kappa1*oiln(i)^rho)+(kappa2*(coal(T)*(1+gZ_coal)^i)^rho)+(kappa3*E3(T)*(1+gZ_green)^rho))^(1/rho);
+      En(i) = (kappa1*(oiln(i)^rho) + kappa2*((coal(T)*(1+gZ_coal)^i)^rho) + kappa3*((E3(T)*(1+gZ_green)^i)^rho))^(1/rho);
+   
     
 %%Option 1 PF Leontief:
         % %Ytn(i) =  (exp((-gamma(T))*(St(T)-Sbar)))*(min(en_K(T)*Ktn(i),eff_E(T)*En(i))^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));    
@@ -198,8 +198,8 @@ for i = 1:1:n
         % 
      
 %%Option 2 PF Nested CES: 
-        Un(i) = (((kappa_capacity*(en_K(T)*Ktn(i))^rho_energy)+(kappa_supply*(ex(T)*En(i))^rho_energy)))^(1/rho_energy);
-        Ytn(i) = A*(exp((-gamma(T))*(St(T)-Sbar)))*(U(T)^alpha)*(((1-x(2*(T-1)+1)-x(2*(T-1)+T+1))*N)^(1-alpha));       
+        Un(i) = (((kappa_capacity(1)*(en_K(T)*Ktn(i))^rho_energy)+(kappa_supply(1)*(ex(T)*En(i))^rho_energy)))^(1/rho_energy);
+        Ytn(i) = A(T)*(exp((-gamma(T))*(St(T)-Sbar)))*(Un(i)^alpha)*(((1-x(2*(T-1)+T)-x(2*(T-1)+2*T))*N)^(1-alpha));       
         
     GDPn(i) = Ytn(i)/eta_GDP;
     Ct(T+i) = (1-theta)*GDPn(i);

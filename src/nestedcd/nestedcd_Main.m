@@ -559,6 +559,7 @@ Yt(1) = (exp((-gamma(1))*(St(1)-Sbar)))*(min(en_K(1)*K0,ex(1)*energy(1))^alpha)*
     GDP(1) = Yt(1)/(eta_GDP);
 Ct(1) = (1-x(1))*GDP(1);
 Kt1(1) = x(1)*GDP(1)+(1-Delta)*K0;
+
 for i = 1:1:T-2
 
 %%Option 1 PF Leontief:
